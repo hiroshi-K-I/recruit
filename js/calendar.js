@@ -304,47 +304,54 @@ const Calendar = (() => {
         <thead>
           <tr>
             <th>日付</th><th>時刻</th><th>回次</th><th>候補者</th>
-            <th>面接官</th><th>場所</th>
-            <th class="arr-th-chk">面接官<br>手配</th>
-            <th class="arr-th-chk">会議室<br>手配</th>
-            <th class="arr-th-chk">案内係<br>手配</th>
+            <th>面接官 <span class="arr-th-hint">（✓で確認済み）</span></th>
+            <th>会議室 <span class="arr-th-hint">（✓で確認済み）</span></th>
+            <th>案内係 <span class="arr-th-hint">（✓で確認済み）</span></th>
           </tr>
         </thead>
         <tbody>`;
 
     if (upcoming.length === 0) {
-      html += `<tr><td colspan="9" class="table-empty">この期間の面接はありません</td></tr>`;
+      html += `<tr><td colspan="7" class="table-empty">この期間の面接はありません</td></tr>`;
     } else {
       upcoming.forEach(iv => {
         const ac     = iv.arrangementsChecked || {};
         const ng     = Interviews?.needsGuide?.(iv.round);
         const ivNames = (iv.interviewerIds || [])
-          .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean).join('・');
+          .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean);
         const guideNames = (iv.guideIds || [])
-          .map(id => hrStaffs.find(x => x.id === id)?.name || '').filter(Boolean).join('・');
-        const candNames = iv._candidateNames?.join('・') || '（空き）';
-        const allOk  = ac.interviewer && ac.room && (!ng || ac.guide);
+          .map(id => hrStaffs.find(x => x.id === id)?.name || '').filter(Boolean);
+        const candNames  = iv._candidateNames?.join('・') || '（空き）';
+        const location   = iv.location || iv.onlineUrl || '';
+        const allOk = ac.interviewer && ac.room && (!ng || ac.guide);
+
+        const arrCell = (field, checked, names, emptyLabel) => `
+          <td class="arr-info-cell ${checked ? 'arr-cell-ok' : ''}">
+            <label class="arr-cell-label">
+              <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="${field}"
+                ${checked ? 'checked' : ''}>
+              <span class="arr-cell-names ${names.length ? '' : 'arr-cell-empty'}">
+                ${names.length ? names.map(n => Utils.esc(n)).join('<br>') : Utils.esc(emptyLabel)}
+              </span>
+            </label>
+          </td>`;
 
         html += `<tr class="${allOk ? 'arr-row-ok' : ''}" data-id="${iv.id}">
           <td>${Utils.formatDateShort(iv.date)}</td>
           <td style="white-space:nowrap">${Utils.esc(iv.startTime)}〜${Utils.esc(iv.endTime)}</td>
           <td><span class="badge badge-blue">${Utils.esc(iv.round || '')}</span></td>
           <td>${Utils.esc(candNames)}</td>
-          <td style="font-size:12px">${Utils.esc(ivNames)}</td>
-          <td style="font-size:12px">${Utils.esc(iv.location || iv.onlineUrl || '')}</td>
-          <td class="arr-check-cell">
-            <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="interviewer"
-              ${ac.interviewer ? 'checked' : ''}>
-          </td>
-          <td class="arr-check-cell">
-            <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="room"
-              ${ac.room ? 'checked' : ''}>
-          </td>
-          <td class="arr-check-cell">
+          ${arrCell('interviewer', ac.interviewer, ivNames, '（未設定）')}
+          ${arrCell('room', ac.room, location ? [location] : [], '（未設定）')}
+          <td class="arr-info-cell ${ng && ac.guide ? 'arr-cell-ok' : ''}">
             ${ng
-              ? `<input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="guide"
-                  ${ac.guide ? 'checked' : ''}>
-                 ${guideNames ? `<div class="arr-guide-name">${Utils.esc(guideNames)}</div>` : ''}`
+              ? `<label class="arr-cell-label">
+                   <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="guide"
+                     ${ac.guide ? 'checked' : ''}>
+                   <span class="arr-cell-names ${guideNames.length ? '' : 'arr-cell-empty'}">
+                     ${guideNames.length ? guideNames.map(n => Utils.esc(n)).join('<br>') : '（未設定）'}
+                   </span>
+                 </label>`
               : `<span class="arr-na">―</span>`}
           </td>
         </tr>`;
