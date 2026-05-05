@@ -74,18 +74,27 @@ const Calendar = (() => {
     }
   }
 
-  // ===== 手配ドット =====
-  function arrDotsHtml(iv, size) {
-    const ac = iv.arrangementsChecked || {};
-    const ng = Interviews?.needsGuide?.(iv.round);
-    const items = [
-      { checked: ac.interviewer, label: '面接官手配' },
-      { checked: ac.room,        label: '会議室手配' },
-      ...(ng ? [{ checked: ac.guide, label: '案内係手配' }] : []),
-    ];
-    return `<div class="arr-dots-${size}">${items.map(it =>
-      `<span class="arr-dot-${size} ${it.checked ? 'ok' : 'ng'}" title="${it.label}"></span>`
-    ).join('')}</div>`;
+  // ===== ブロック用: 面接官名・会議室名テキスト表示 =====
+  function blockDetailHtml(iv) {
+    const ivMaster = Masters?.get?.('interviewers') || [];
+    const ivNames  = (iv.interviewerIds || [])
+      .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean);
+    const location = iv.location || (iv.onlineUrl ? 'オンライン' : '');
+    if (!ivNames.length && !location) return '';
+    return `<div class="block-detail">
+      ${ivNames.length ? `<span class="block-detail-iv">${ivNames.map(n => Utils.esc(n)).join('・')}</span>` : ''}
+      ${location       ? `<span class="block-detail-room">${Utils.esc(location)}</span>` : ''}
+    </div>`;
+  }
+
+  // ===== チップ用: 面接官名・会議室名（コンパクト） =====
+  function chipDetailHtml(iv) {
+    const ivMaster = Masters?.get?.('interviewers') || [];
+    const first    = ivMaster.find(x => x.id === iv.interviewerIds?.[0]);
+    const location = iv.location || (iv.onlineUrl ? 'オンライン' : '');
+    const parts    = [...(first ? [first.name] : []), ...(location ? [location] : [])];
+    if (!parts.length) return '';
+    return `<div class="chip-detail">${Utils.esc(parts.join(' / '))}</div>`;
   }
 
   // ===================== 月表示 =====================
@@ -119,7 +128,7 @@ const Calendar = (() => {
           data-id="${iv.id}" title="${Utils.esc(label)}">
           ${Utils.esc(iv.startTime)} ${Utils.esc(label)}
           <span class="chip-cap">${cnt}/${max}</span>
-          ${arrDotsHtml(iv, 'sm')}
+          ${chipDetailHtml(iv)}
         </div>`;
       }).join('');
       const more = dayIvs.length > 3
@@ -231,7 +240,7 @@ const Calendar = (() => {
           <div class="block-title">${Utils.esc(iv.startTime)}〜${Utils.esc(iv.endTime)}</div>
           <div class="block-sub">${Utils.esc(ivLabel(iv))}</div>
           <div class="block-caps">${dots}</div>
-          ${arrDotsHtml(iv, 'blk')}
+          ${blockDetailHtml(iv)}
           <div class="block-resize-handle" data-id="${iv.id}"></div>
         </div>`;
       });
