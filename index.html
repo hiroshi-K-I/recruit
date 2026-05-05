@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面接日程調整システム</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ヘッダー -->
+  <header class="app-header">
+    <span class="app-title">📅 面接日程調整システム</span>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-view="candidates">候補者管理</button>
+      <button class="nav-tab"        data-view="interviews">面接管理</button>
+      <button class="nav-tab"        data-view="masters">マスタ設定</button>
+    </nav>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-sm" id="btn-import-csv" style="color:#fff;border-color:rgba(255,255,255,.4)">↑ CSVインポート</button>
+      <button class="btn btn-ghost btn-sm" id="btn-reset-all"  style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.3)">🗑 全データ削除</button>
+    </div>
+  </header>
+
+  <!-- ===== 候補者管理ビュー ===== -->
+  <section id="view-candidates" class="view active">
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="cand-search" class="form-control" placeholder="氏名・申送り・特記事項" style="width:220px;">
+      </div>
+      <select id="filter-recruit-type" class="filter-select">
+        <option value="">採用種別: すべて</option>
+        <option value="新卒">新卒</option>
+        <option value="キャリア">キャリア</option>
+      </select>
+      <select id="filter-status" class="filter-select">
+        <option value="">選考状況: すべて</option>
+        <option>書類選考中</option>
+        <option>1次面接待ち</option>
+        <option>1次面接済</option>
+        <option>2次面接待ち</option>
+        <option>2次面接済</option>
+        <option>最終面接待ち</option>
+        <option>最終面接済</option>
+        <option>内定</option>
+        <option>辞退</option>
+        <option>不採用</option>
+      </select>
+      <select id="filter-staff" class="filter-select"><option value="">担当者: すべて</option></select>
+      <select id="filter-jobtype" class="filter-select"><option value="">職種: すべて</option></select>
+      <span id="cand-count" style="font-size:12px;color:var(--gray-500);margin-left:4px;"></span>
+      <div class="toolbar-spacer"></div>
+      <button class="btn btn-primary" id="btn-add-candidate">＋ 候補者追加</button>
+      <button class="btn btn-secondary btn-sm" id="btn-export-candidates">↓ CSV出力</button>
+    </div>
+    <div class="table-wrap">
+      <table id="candidates-table">
+        <thead>
+          <tr>
+            <th>氏名</th>
+            <th>採用種別</th>
+            <th>大学</th>
+            <th>文理</th>
+            <th>職種</th>
+            <th>担当者</th>
+            <th>選考状況</th>
+            <th>志望度</th>
+            <th>登録日時</th>
+          </tr>
+        </thead>
+        <tbody id="candidates-tbody">
+          <tr><td colspan="9" class="table-empty">読み込み中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 面接管理ビュー ===== -->
+  <section id="view-interviews" class="view">
+    <div class="cal-toolbar">
+      <button class="btn btn-secondary btn-sm" id="cal-prev">◀</button>
+      <button class="btn btn-secondary btn-sm" id="cal-today">今日</button>
+      <button class="btn btn-secondary btn-sm" id="cal-next">▶</button>
+      <span class="cal-title" id="cal-title"></span>
+      <div class="toolbar-spacer"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span>空き</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>未結果</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#10B981"></span>合格</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#EF4444"></span>不合格</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#9CA3AF"></span>辞退</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#8B5CF6"></span>保留</span>
+      </div>
+      <div class="cal-view-btns">
+        <button class="cal-view-btn active" data-calview="month">月</button>
+        <button class="cal-view-btn"        data-calview="week">週</button>
+        <button class="cal-view-btn"        data-calview="day">日</button>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-add-interview">＋ 面接枠追加</button>
+      <button class="btn btn-secondary btn-sm" id="btn-export-interviews">↓ CSV出力</button>
+    </div>
+    <div id="calendar-container" style="flex:1;overflow:hidden;display:flex;flex-direction:column;"></div>
+  </section>
+
+  <!-- ===== マスタ設定ビュー ===== -->
+  <section id="view-masters" class="view">
+    <div class="masters-layout">
+      <nav class="masters-sidebar">
+        <button class="masters-menu-item active" data-master="interviewers">面接官</button>
+        <button class="masters-menu-item" data-master="universities">大学</button>
+        <button class="masters-menu-item" data-master="jobTypes">職種</button>
+        <button class="masters-menu-item" data-master="locations">勤務地</button>
+        <button class="masters-menu-item" data-master="hrStaff">担当者</button>
+        <button class="masters-menu-item" data-master="rooms">面接場所</button>
+      </nav>
+      <div class="masters-content" id="masters-content"></div>
+    </div>
+  </section>
+
+</div><!-- #app -->
+
+<!-- ===== モーダル: 候補者登録/編集 ===== -->
+<div class="modal-backdrop" id="modal-candidate">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="modal-cand-title">候補者登録</h2>
+      <button class="btn-close" data-close="modal-candidate">×</button>
+    </div>
+    <div class="modal-body" id="modal-cand-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="btn-delete-candidate" style="display:none">削除</button>
+      <button class="btn btn-secondary" data-close="modal-candidate">キャンセル</button>
+      <button class="btn btn-primary"   id="btn-save-candidate">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: 面接枠登録/編集 ===== -->
+<div class="modal-backdrop" id="modal-interview">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h2 id="modal-iv-title">面接枠登録</h2>
+      <button class="btn-close" data-close="modal-interview">×</button>
+    </div>
+    <div class="modal-body" id="modal-iv-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="btn-delete-interview" style="display:none">削除</button>
+      <button class="btn btn-secondary" data-close="modal-interview">キャンセル</button>
+      <button class="btn btn-primary"   id="btn-save-interview">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: CSVインポート ===== -->
+<div class="modal-backdrop" id="modal-import">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>候補者CSVインポート</h2>
+      <button class="btn-close" data-close="modal-import">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;">
+        UTF-8形式のCSVファイルをインポートします。1行目はヘッダー行として扱います。<br>
+        列順: <code>氏名, 採用種別, 大学, 文理, 職種, 希望勤務地, 担当者, 選考状況, 志望度, 申送り, 特記事項</code>
+      </p>
+      <div class="form-group">
+        <label>CSVファイル</label>
+        <input type="file" id="import-file" accept=".csv" class="form-control">
+      </div>
+      <div id="import-preview" style="margin-top:12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-import">キャンセル</button>
+      <button class="btn btn-primary" id="btn-do-import">インポート実行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== スクリプト ===== -->
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/masters.js"></script>
+<script src="js/candidates.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/interviews.js"></script>
+<script src="js/csv.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
