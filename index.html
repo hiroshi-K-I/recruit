@@ -19,8 +19,12 @@
       <button class="nav-tab"        data-view="masters">マスタ設定</button>
     </nav>
     <div class="header-right">
-      <button class="btn btn-ghost btn-sm" id="btn-import-csv" style="color:#fff;border-color:rgba(255,255,255,.4)">↑ CSVインポート</button>
-      <button class="btn btn-ghost btn-sm" id="btn-reset-all"  style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.3)">🗑 全データ削除</button>
+      <span id="current-username" style="font-size:12px;color:rgba(255,255,255,.6);cursor:pointer" id="btn-open-settings" title="設定">👤 未設定</span>
+      <button class="btn btn-ghost btn-sm" id="btn-open-settings" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)">⚙ 設定</button>
+      <button class="btn btn-ghost btn-sm" id="btn-sync-export"  style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)">📤 同期エクスポート</button>
+      <button class="btn btn-ghost btn-sm" id="btn-sync-import"  style="color:#fff;border-color:rgba(255,255,255,.4)">📥 同期インポート</button>
+      <button class="btn btn-ghost btn-sm" id="btn-import-csv"   style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.25)">↑ CSVインポート</button>
+      <button class="btn btn-ghost btn-sm" id="btn-reset-all"    style="color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.2)">🗑 全削除</button>
     </div>
   </header>
 
@@ -158,6 +162,61 @@
   </div>
 </div>
 
+<!-- ===== モーダル: 設定 ===== -->
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙ 設定</h2>
+      <button class="btn-close" data-close="modal-settings">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="required">ユーザー名（同期時に記録されます）</label>
+        <input type="text" id="settings-username" class="form-control" placeholder="例: 山田 太郎">
+      </div>
+      <div class="form-group">
+        <label>最終同期エクスポート日時</label>
+        <div id="settings-last-export" style="font-size:13px;color:var(--gray-500);padding:6px 0;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-settings">キャンセル</button>
+      <button class="btn btn-primary" id="btn-save-settings">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== モーダル: 同期インポート ===== -->
+<div class="modal-backdrop" id="modal-sync-import">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2>📥 同期インポート</h2>
+      <button class="btn-close" data-close="modal-sync-import">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <!-- Step 1: ファイル選択 -->
+      <div id="sync-step-1">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">
+          他の担当者がエクスポートした <code>.json</code> ファイルを選択してください。<br>
+          バージョンを比較して自動マージし、競合がある場合は解決を求めます。
+        </p>
+        <div class="form-group">
+          <label>同期ファイル（.json）</label>
+          <input type="file" id="sync-file-input" accept=".json" class="form-control">
+        </div>
+      </div>
+      <!-- Step 2: 分析結果 -->
+      <div id="sync-step-2" style="display:none;margin-top:16px"></div>
+      <!-- Step 3: 競合解決 -->
+      <div id="sync-step-3" style="display:none;margin-top:16px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-sync-import">キャンセル</button>
+      <button class="btn btn-primary" id="btn-sync-execute" style="display:none">マージ実行</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== モーダル: キーボードショートカット ===== -->
 <div class="modal-backdrop" id="modal-shortcuts">
   <div class="modal">
@@ -225,6 +284,8 @@
 <script src="js/calendar.js"></script>
 <script src="js/interviews.js"></script>
 <script src="js/csv.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/app.js"></script>
 </body>

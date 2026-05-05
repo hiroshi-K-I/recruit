@@ -246,11 +246,11 @@ const Candidates = (() => {
 
     if (editingId !== null) {
       const existing = allCandidates.find(x => x.id === editingId);
-      await DB.put(DB.STORES.CANDIDATES, { ...existing, ...data });
+      await DB.put(DB.STORES.CANDIDATES, Sync.stamp({ ...existing, ...data }));
       Utils.toast('候補者情報を更新しました');
     } else {
       data.createdAt = Utils.nowISO();
-      await DB.add(DB.STORES.CANDIDATES, data);
+      await DB.add(DB.STORES.CANDIDATES, Sync.stamp(data));
       Utils.toast('候補者を登録しました');
     }
 

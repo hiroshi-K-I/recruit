@@ -524,3 +524,23 @@ kbd {
   font-size: 12px; font-family: monospace; color: var(--gray-700);
   box-shadow: 0 1px 0 var(--gray-300);
 }
+
+/* ===== 同期・競合解決UI ===== */
+.sync-meta { font-size:13px; color:var(--gray-600); margin-bottom:12px; padding:8px 12px; background:var(--gray-50); border-radius:var(--radius); }
+.sync-summary-table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:4px; }
+.sync-summary-table th { text-align:left; font-size:12px; font-weight:600; color:var(--gray-500); padding:6px 10px; border-bottom:2px solid var(--gray-200); }
+.sync-summary-table td { padding:7px 10px; border-bottom:1px solid var(--gray-100); }
+.sync-row-conflict td { color:var(--danger); font-weight:600; }
+.sync-section-title { font-size:14px; font-weight:700; color:var(--gray-800); margin-bottom:10px; }
+
+.conflict-list { display:flex; flex-direction:column; gap:14px; }
+.conflict-card { border:1px solid #FCD34D; border-radius:var(--radius); overflow:hidden; }
+.conflict-header { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#FFFBEB; flex-wrap:wrap; }
+.conflict-table { width:100%; border-collapse:collapse; font-size:12px; }
+.conflict-table th { padding:6px 10px; text-align:left; font-size:11px; font-weight:600; color:var(--gray-500); background:var(--gray-50); border-bottom:1px solid var(--gray-200); }
+.conflict-table td { padding:6px 10px; border-bottom:1px solid var(--gray-100); vertical-align:top; }
+.conflict-field  { font-weight:600; color:var(--gray-600); width:100px; }
+.conflict-local  { background:#F0FFF4; }
+.conflict-import { background:#EFF6FF; }
+.conflict-choice { display:flex; gap:20px; padding:10px 14px; background:#FEFCE8; border-top:1px solid #FCD34D; }
+.conflict-choice label { font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }

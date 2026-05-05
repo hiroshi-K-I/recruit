@@ -292,11 +292,11 @@ const Interviews = (() => {
 
     if (editingId !== null) {
       const existing = allInterviews.find(x => x.id === editingId);
-      await DB.put(DB.STORES.INTERVIEWS, { ...existing, ...data });
+      await DB.put(DB.STORES.INTERVIEWS, Sync.stamp({ ...existing, ...data }));
       Utils.toast('面接枠を更新しました');
     } else {
       data.createdAt = Utils.nowISO();
-      await DB.add(DB.STORES.INTERVIEWS, data);
+      await DB.add(DB.STORES.INTERVIEWS, Sync.stamp(data));
       Utils.toast('面接枠を登録しました');
     }
 

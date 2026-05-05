@@ -6,9 +6,15 @@
   Interviews.initCalendar();
   await Interviews.load();
   Masters.renderView();
-
-  // ダッシュボードを初期描画
   Dashboard.render();
+  Settings.updateUsernameDisplay();
+
+  // 未設定ならユーザー名入力を促す
+  if (!Settings.getUsername()) {
+    setTimeout(() => {
+      Utils.toast('ユーザー名を設定してください（⚙ 設定）', 'info');
+    }, 800);
+  }
 
   // ===== ナビゲーション =====
   function switchView(name) {
@@ -43,6 +49,21 @@
   // ===== 面接モーダル =====
   document.getElementById('btn-save-interview')?.addEventListener('click', () => Interviews.save());
   document.getElementById('btn-delete-interview')?.addEventListener('click', () => Interviews.del());
+
+  // ===== 設定 =====
+  document.getElementById('btn-open-settings')?.addEventListener('click', () => Settings.renderModal());
+  document.getElementById('btn-save-settings')?.addEventListener('click', () => {
+    Settings.saveFromModal();
+    Settings.updateUsernameDisplay();
+  });
+
+  // ===== 同期エクスポート / インポート =====
+  document.getElementById('btn-sync-export')?.addEventListener('click', () => Sync.exportJSON());
+  document.getElementById('btn-sync-import')?.addEventListener('click', () => Sync.openImportModal());
+  document.getElementById('sync-file-input')?.addEventListener('change', e => {
+    Sync.onFileSelected(e.target.files[0]);
+  });
+  document.getElementById('btn-sync-execute')?.addEventListener('click', () => Sync.executeFromModal());
 
   // ===== CSVエクスポート =====
   document.getElementById('btn-export-candidates')?.addEventListener('click', () => {
