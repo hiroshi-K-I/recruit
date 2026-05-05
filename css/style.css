@@ -437,3 +437,90 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
 .legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--gray-600); }
 .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ===== ダッシュボード ===== */
+.db-scroll { flex: 1; overflow-y: auto; }
+.db-wrap   { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+
+.db-kpi-row {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 20px;
+}
+@media (max-width: 1100px) { .db-kpi-row { grid-template-columns: repeat(3, 1fr); } }
+
+.db-kpi-card {
+  background: #fff; border-radius: 10px; padding: 18px 20px;
+  box-shadow: var(--shadow); border-top: 4px solid transparent;
+}
+.db-kpi-value { font-size: 32px; font-weight: 800; line-height: 1; }
+.db-kpi-label { font-size: 13px; font-weight: 600; color: var(--gray-600); margin-top: 6px; }
+.db-kpi-sub   { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+
+.db-main-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+.db-card {
+  background: #fff; border-radius: 10px; padding: 18px 20px;
+  box-shadow: var(--shadow); flex: 1; min-width: 0;
+}
+.db-card-wide { flex: 2.2; }
+.db-card-title { font-size: 14px; font-weight: 700; color: var(--gray-800); margin-bottom: 14px; }
+.db-empty { color: var(--gray-400); font-size: 13px; text-align: center; padding: 24px 0; }
+
+/* 横棒グラフ */
+.db-bar-list  { display: flex; flex-direction: column; gap: 8px; }
+.db-bar-row   { display: flex; align-items: center; gap: 8px; }
+.db-bar-label { font-size: 12px; color: var(--gray-600); width: 100px; flex-shrink: 0; }
+.db-bar-track { flex: 1; height: 14px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
+.db-bar-fill  { height: 100%; border-radius: 99px; transition: width .4s ease; min-width: 4px; }
+.db-bar-count { font-size: 12px; font-weight: 600; color: var(--gray-700); width: 28px; text-align: right; }
+
+/* ドーナツ（CSS only） */
+.db-donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.db-donut {
+  width: 120px; height: 120px; border-radius: 50%; position: relative;
+  background: conic-gradient(
+    #3B82F6 0% calc(var(--new) * 1%),
+    #F59E0B calc(var(--new) * 1%) 100%
+  );
+  display: flex; align-items: center; justify-content: center;
+}
+.db-donut::before {
+  content: ''; position: absolute; width: 76px; height: 76px;
+  background: #fff; border-radius: 50%;
+}
+.db-donut-center {
+  position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center;
+}
+.db-legend-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.db-legend-row  { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-700); }
+.db-legend-dot  { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+/* ダッシュボードテーブル */
+.db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.db-table th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: var(--gray-500); border-bottom: 2px solid var(--gray-200); white-space: nowrap; }
+.db-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.db-table-row:hover { background: var(--gray-50); }
+
+/* ===== 定員ドット ===== */
+.cap-dots { display: flex; gap: 3px; margin-bottom: 6px; }
+.cap-dot  { width: 14px; height: 14px; border-radius: 50%; background: var(--gray-200); border: 1.5px solid var(--gray-300); }
+.cap-dot.filled { background: var(--primary); border-color: var(--primary-dk); }
+.cap-label {}
+
+/* 週表示ブロック内ドット */
+.block-caps { display: flex; gap: 2px; margin-top: 2px; }
+.cap-dot-sm { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.35); }
+.cap-dot-sm.filled { background: rgba(255,255,255,.9); }
+
+/* ===== 月表示 D&D ===== */
+.cal-month-cell.drag-over { background: #EFF6FF; outline: 2px dashed var(--primary); }
+.chip-cap { font-size: 10px; opacity: .85; margin-left: 4px; }
+
+/* ===== ショートカットテーブル ===== */
+.shortcut-table { width: 100%; border-collapse: collapse; }
+.shortcut-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--gray-500); padding: 6px 10px; border-bottom: 2px solid var(--gray-200); }
+.shortcut-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+kbd {
+  display: inline-block; padding: 2px 7px; border-radius: 4px;
+  background: var(--gray-100); border: 1px solid var(--gray-300);
+  font-size: 12px; font-family: monospace; color: var(--gray-700);
+  box-shadow: 0 1px 0 var(--gray-300);
+}

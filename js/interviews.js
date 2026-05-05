@@ -1,35 +1,48 @@
 const Interviews = (() => {
   const RESULTS = ['未実施','合格','不合格','辞退','保留'];
+  const ROUNDS  = ['1次面接','2次面接','最終面接','その他'];
+
+  function maxByRound(round) {
+    if (round === '1次面接') return 4;
+    if (round === '2次面接' || round === '最終面接') return 2;
+    return 4;
+  }
 
   let allInterviews = [];
   let editingId     = null;
-  let ivSelector    = null;  // 面接官二段階セレクタの参照
+  let ivSelector    = null;
 
-  // ===== データ読み込み =====
+  // ===== データ読み込み・正規化 =====
   async function load() {
-    allInterviews = await DB.getAll(DB.STORES.INTERVIEWS);
-
-    // 候補者名をキャッシュ
+    const raw  = await DB.getAll(DB.STORES.INTERVIEWS);
     const cands = Candidates.getAll();
-    allInterviews.forEach(iv => {
-      const c = cands.find(x => x.id === iv.candidateId);
-      iv._candidateName = c ? c.name : '';
+
+    // 旧スキーマ (candidateId: number) → 新スキーマ (candidateIds: number[]) の互換処理
+    allInterviews = raw.map(iv => {
+      if (!iv.candidateIds) {
+        iv.candidateIds = iv.candidateId ? [iv.candidateId] : [];
+      }
+      if (!iv.round) iv.round = '1次面接';
+      iv._candidateNames = iv.candidateIds
+        .map(id => cands.find(x => x.id === id)?.name)
+        .filter(Boolean);
+      iv._candidateName = iv._candidateNames[0] || '';
+      return iv;
     });
 
     Calendar.setInterviews(allInterviews);
     Calendar.render();
   }
 
-  // ===== カレンダーイベントハンドラ登録 =====
+  // ===== カレンダーイベントハンドラ =====
   function initCalendar() {
     Calendar.init({
       onClickSlot:   (date, start, end) => openModal(null, date, start, end),
       onClickBlock:  (iv)               => openModal(iv.id),
       onMoveBlock:   async (iv, newDate, newStart, newEnd) => {
-        await DB.put(DB.STORES.INTERVIEWS, {
-          ...iv, date: newDate, startTime: newStart, endTime: newEnd,
-          updatedAt: Utils.nowISO(),
-        });
+        const data = { ...iv, date: newDate, updatedAt: Utils.nowISO() };
+        if (newStart) { data.startTime = newStart; data.endTime = newEnd; }
+        await DB.put(DB.STORES.INTERVIEWS, data);
         Utils.toast('面接枠を移動しました');
         await load();
       },
@@ -40,18 +53,14 @@ const Interviews = (() => {
       },
     });
 
-    // ビュー切り替えボタン
     document.querySelectorAll('.cal-view-btn').forEach(btn => {
       btn.onclick = () => Calendar.setView(btn.dataset.calview);
     });
     document.getElementById('cal-prev')?.addEventListener('click',  () => Calendar.navigate(-1));
     document.getElementById('cal-next')?.addEventListener('click',  () => Calendar.navigate(1));
     document.getElementById('cal-today')?.addEventListener('click', () => Calendar.goToday());
-
-    // ＋ボタン
     document.getElementById('btn-add-interview')?.addEventListener('click', () => {
-      const today = Utils.formatDate(new Date());
-      openModal(null, today, '10:00', '11:00');
+      openModal(null, Utils.formatDate(new Date()), '10:00', '11:00');
     });
   }
 
@@ -62,25 +71,25 @@ const Interviews = (() => {
     const iv = isNew ? {} : allInterviews.find(x => x.id === id) || {};
 
     document.getElementById('modal-iv-title').textContent = isNew ? '面接枠登録' : '面接枠編集';
-    const deleteBtn = document.getElementById('btn-delete-interview');
-    deleteBtn.style.display = isNew ? 'none' : '';
+    document.getElementById('btn-delete-interview').style.display = isNew ? 'none' : '';
 
-    const date      = iv.date      || defaultDate || Utils.formatDate(new Date());
-    const startTime = iv.startTime || defaultStart;
-    const endTime   = iv.endTime   || defaultEnd;
-    const format    = iv.format    || 'リアル';
-    const result    = iv.result    || '未実施';
+    const date   = iv.date      || defaultDate || Utils.formatDate(new Date());
+    const start  = iv.startTime || defaultStart;
+    const end    = iv.endTime   || defaultEnd;
+    const format = iv.format    || 'リアル';
+    const result = iv.result    || '未実施';
+    const round  = iv.round     || '1次面接';
+    const max    = maxByRound(round);
 
-    // 候補者リスト
-    const cands     = Candidates.getAll();
-    const rooms     = Masters.get('rooms').map(r => r.name);
-    const candOpts  = cands.map(c =>
-      `<option value="${c.id}" ${iv.candidateId === c.id ? 'selected' : ''}>${Utils.esc(c.name)}</option>`
+    const cands    = Candidates.getAll();
+    const rooms    = Masters.get('rooms').map(r => r.name);
+    const resultOpts = RESULTS.map(r => `<option ${result===r?'selected':''}>${r}</option>`).join('');
+    const roundOpts  = ROUNDS.map(r =>
+      `<option value="${r}" ${round===r?'selected':''}>${r}（定員${maxByRound(r)}名）</option>`
     ).join('');
 
-    const resultOpts = RESULTS.map(r =>
-      `<option ${result === r ? 'selected' : ''}>${r}</option>`
-    ).join('');
+    // 登録済み候補者IDリスト
+    const selIds = iv.candidateIds || [];
 
     document.getElementById('modal-iv-body').innerHTML = `
       <div class="form-row">
@@ -96,77 +105,159 @@ const Interviews = (() => {
           <label class="required">終了時刻</label>
           <select id="iv-end" class="form-control"></select>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label>候補者</label>
-          <select id="iv-candidate" class="form-control">
-            <option value="">（未選択）</option>
-            ${candOpts}
-          </select>
-        </div>
         <div class="form-group">
-          <label>面接形式</label>
-          <div class="radio-group">
-            <label><input type="radio" name="iv-format" value="リアル"    ${format === 'リアル'   ? 'checked' : ''}> リアル</label>
-            <label><input type="radio" name="iv-format" value="オンライン" ${format === 'オンライン' ? 'checked' : ''}> オンライン</label>
-          </div>
+          <label>面接回次</label>
+          <select id="iv-round" class="form-control">${roundOpts}</select>
         </div>
       </div>
-      <div class="form-group" id="iv-location-wrap" style="${format === 'オンライン' ? 'display:none' : ''}">
-        <label>面接場所</label>
-        <input type="text" id="iv-location" class="form-control" value="${Utils.esc(iv.location || '')}" placeholder="会議室名など">
+
+      <div class="form-group">
+        <label>候補者
+          <span id="iv-cap-label" class="cap-label"
+            style="margin-left:8px;font-size:12px;color:var(--gray-500)">
+            （0/${max}名）
+          </span>
+        </label>
+        <div id="iv-candidate-area"></div>
       </div>
-      <div class="form-group" id="iv-url-wrap" style="${format === 'リアル' ? 'display:none' : ''}">
-        <label>オンラインURL</label>
-        <input type="text" id="iv-online-url" class="form-control" value="${Utils.esc(iv.onlineUrl || '')}" placeholder="https://...">
-      </div>
+
       <div class="form-group">
         <label>面接官（二段階選択）</label>
         <div id="iv-interviewer-selector"></div>
       </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label>面接結果</label>
-          <select id="iv-result" class="form-control">
-            ${resultOpts}
-          </select>
+          <label>面接形式</label>
+          <div class="radio-group">
+            <label><input type="radio" name="iv-format" value="リアル"    ${format==='リアル'   ?'checked':''}> リアル</label>
+            <label><input type="radio" name="iv-format" value="オンライン" ${format==='オンライン'?'checked':''}> オンライン</label>
+          </div>
         </div>
+        <div class="form-group">
+          <label>面接結果</label>
+          <select id="iv-result" class="form-control">${resultOpts}</select>
+        </div>
+      </div>
+      <div class="form-group" id="iv-location-wrap" style="${format==='オンライン'?'display:none':''}">
+        <label>面接場所</label>
+        <input type="text" id="iv-location" class="form-control" value="${Utils.esc(iv.location||'')}" placeholder="会議室名など">
+      </div>
+      <div class="form-group" id="iv-url-wrap" style="${format==='リアル'?'display:none':''}">
+        <label>オンラインURL</label>
+        <input type="text" id="iv-online-url" class="form-control" value="${Utils.esc(iv.onlineUrl||'')}" placeholder="https://...">
       </div>
       <div class="form-group">
         <label>申送り</label>
-        <textarea id="iv-notes" class="form-control">${Utils.esc(iv.notes || '')}</textarea>
+        <textarea id="iv-notes" class="form-control">${Utils.esc(iv.notes||'')}</textarea>
       </div>`;
 
-    // 時刻セレクト初期化
-    Utils.fillTimeSelect(document.getElementById('iv-start'), startTime);
-    Utils.fillTimeSelect(document.getElementById('iv-end'),   endTime);
+    Utils.fillTimeSelect(document.getElementById('iv-start'), start);
+    Utils.fillTimeSelect(document.getElementById('iv-end'),   end);
 
-    // 開始時刻変更で終了時刻を自動調整
     document.getElementById('iv-start').addEventListener('change', () => {
       const s = Utils.timeToMinutes(document.getElementById('iv-start').value);
       const e = Utils.timeToMinutes(document.getElementById('iv-end').value);
-      if (e <= s) {
-        document.getElementById('iv-end').value = Utils.minutesToTime(s + 60);
-      }
+      if (e <= s) document.getElementById('iv-end').value = Utils.minutesToTime(s + 60);
     });
 
-    // 面接形式切り替え
     document.querySelectorAll('input[name="iv-format"]').forEach(r => {
       r.addEventListener('change', () => {
-        const isOnline = document.querySelector('input[name="iv-format"]:checked')?.value === 'オンライン';
-        document.getElementById('iv-location-wrap').style.display = isOnline ? 'none' : '';
-        document.getElementById('iv-url-wrap').style.display      = isOnline ? '' : 'none';
+        const online = document.querySelector('input[name="iv-format"]:checked')?.value === 'オンライン';
+        document.getElementById('iv-location-wrap').style.display = online ? 'none' : '';
+        document.getElementById('iv-url-wrap').style.display      = online ? '' : 'none';
       });
     });
 
-    // オートコンプリート（面接場所）
     Masters.attachAutocomplete(document.getElementById('iv-location'), rooms);
 
-    // 面接官二段階セレクタ
+    // 候補者セレクタ構築
+    buildCandidateSelector('iv-candidate-area', cands, selIds, round);
+
+    // 回次変更 → 定員更新
+    document.getElementById('iv-round').addEventListener('change', () => {
+      const r = document.getElementById('iv-round').value;
+      rebuildCandidateCapLabel(r);
+    });
+
     ivSelector = Masters.buildInterviewerSelector('iv-interviewer-selector', iv.interviewerIds || []);
 
     openBackdrop('modal-interview');
+  }
+
+  // ===== 候補者セレクタ =====
+  function buildCandidateSelector(containerId, cands, selectedIds, round) {
+    const container = document.getElementById(containerId);
+    let selected = new Set(selectedIds);
+
+    function getMax() {
+      const r = document.getElementById('iv-round')?.value || round;
+      return maxByRound(r);
+    }
+
+    function render() {
+      const max  = getMax();
+      const cnt  = selected.size;
+      const full = cnt >= max;
+
+      const capLabel = document.getElementById('iv-cap-label');
+      if (capLabel) {
+        capLabel.textContent = `（${cnt}/${max}名）`;
+        capLabel.style.color = full ? 'var(--danger)' : 'var(--gray-500)';
+      }
+
+      // 定員バー
+      const dots = Array.from({length: max}, (_, i) =>
+        `<span class="cap-dot ${i < cnt ? 'filled' : ''}"></span>`
+      ).join('');
+
+      const tags = [...selected].map(id => {
+        const c = cands.find(x => x.id === id);
+        return c ? `<span class="tag" data-id="${id}">${Utils.esc(c.name)}<button class="tag-remove" data-id="${id}">×</button></span>` : '';
+      }).join('');
+
+      // 追加セレクト
+      const remaining = cands.filter(c => !selected.has(c.id));
+      const addOpts   = remaining.map(c =>
+        `<option value="${c.id}">${Utils.esc(c.name)}（${Utils.esc(c.selectionStatus||'')}）</option>`
+      ).join('');
+
+      container.innerHTML = `
+        <div class="cap-dots">${dots}</div>
+        <div class="interviewer-tags" id="cand-tags">${tags}</div>
+        ${!full ? `<div style="display:flex;gap:8px;margin-top:6px;">
+          <select id="cand-add-sel" class="form-control" style="flex:1">
+            <option value="">-- 候補者を選択 --</option>
+            ${addOpts}
+          </select>
+          <button class="btn btn-secondary btn-sm" id="btn-cand-add">追加</button>
+        </div>` : `<p style="font-size:12px;color:var(--danger);margin-top:6px;">定員に達しました</p>`}`;
+
+      container.querySelectorAll('.tag-remove').forEach(btn => {
+        btn.onclick = () => { selected.delete(Number(btn.dataset.id)); render(); };
+      });
+
+      document.getElementById('btn-cand-add')?.addEventListener('click', () => {
+        const val = Number(document.getElementById('cand-add-sel').value);
+        if (val && !selected.has(val)) { selected.add(val); render(); }
+      });
+    }
+
+    render();
+
+    // 回次変更時に定員を再描画
+    document.getElementById('iv-round')?.addEventListener('change', render);
+
+    return { getSelected: () => [...selected] };
+  }
+
+  function rebuildCandidateCapLabel(round) {
+    const max = maxByRound(round);
+    const cap = document.getElementById('iv-cap-label');
+    if (cap) {
+      const cur = document.querySelectorAll('.cap-dot.filled').length;
+      cap.textContent = `（${cur}/${max}名）`;
+    }
   }
 
   // ===== 保存 =====
@@ -180,14 +271,16 @@ const Interviews = (() => {
       Utils.toast('終了時刻は開始時刻より後にしてください', 'error'); return;
     }
 
-    const candId = Number(document.getElementById('iv-candidate').value) || null;
-    const ivIds  = ivSelector ? ivSelector.getSelected() : [];
+    // 候補者ID収集（cap-dotsのタグから）
+    const candIds = [...document.querySelectorAll('#iv-candidate-area .tag')].map(t => Number(t.dataset.id)).filter(Boolean);
+    const ivIds   = ivSelector ? ivSelector.getSelected() : [];
 
     const data = {
       date,
       startTime:      start,
       endTime:        end,
-      candidateId:    candId,
+      round:          document.getElementById('iv-round').value,
+      candidateIds:   candIds,
       interviewerIds: ivIds,
       format:         document.querySelector('input[name="iv-format"]:checked')?.value || 'リアル',
       location:       document.getElementById('iv-location').value.trim(),
@@ -225,5 +318,5 @@ const Interviews = (() => {
 
   function getAll() { return allInterviews; }
 
-  return { load, initCalendar, openModal, save, del, getAll };
+  return { load, initCalendar, openModal, save, del, getAll, maxByRound };
 })();

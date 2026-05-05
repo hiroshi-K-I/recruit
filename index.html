@@ -13,7 +13,8 @@
   <header class="app-header">
     <span class="app-title">📅 面接日程調整システム</span>
     <nav class="nav-tabs">
-      <button class="nav-tab active" data-view="candidates">候補者管理</button>
+      <button class="nav-tab active" data-view="dashboard">ダッシュボード</button>
+      <button class="nav-tab"        data-view="candidates">候補者管理</button>
       <button class="nav-tab"        data-view="interviews">面接管理</button>
       <button class="nav-tab"        data-view="masters">マスタ設定</button>
     </nav>
@@ -23,8 +24,13 @@
     </div>
   </header>
 
+  <!-- ===== ダッシュボードビュー ===== -->
+  <section id="view-dashboard" class="view active">
+    <div id="db-loading" style="padding:40px;text-align:center;color:var(--gray-400)">読み込み中...</div>
+  </section>
+
   <!-- ===== 候補者管理ビュー ===== -->
-  <section id="view-candidates" class="view active">
+  <section id="view-candidates" class="view">
     <div class="toolbar">
       <div class="search-box">
         <input type="text" id="cand-search" class="form-control" placeholder="氏名・申送り・特記事項" style="width:220px;">
@@ -152,6 +158,40 @@
   </div>
 </div>
 
+<!-- ===== モーダル: キーボードショートカット ===== -->
+<div class="modal-backdrop" id="modal-shortcuts">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⌨️ キーボードショートカット</h2>
+      <button class="btn-close" data-close="modal-shortcuts">×</button>
+    </div>
+    <div class="modal-body">
+      <table class="shortcut-table">
+        <thead><tr><th>キー</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>N</kbd></td><td>候補者を新規登録</td></tr>
+          <tr><td><kbd>I</kbd></td><td>面接枠を新規登録</td></tr>
+          <tr><td><kbd>1</kbd></td><td>ダッシュボードを表示</td></tr>
+          <tr><td><kbd>2</kbd></td><td>候補者管理を表示</td></tr>
+          <tr><td><kbd>3</kbd></td><td>面接管理を表示</td></tr>
+          <tr><td><kbd>4</kbd></td><td>マスタ設定を表示</td></tr>
+          <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>カレンダー 前へ / 次へ</td></tr>
+          <tr><td><kbd>T</kbd></td><td>カレンダー 今日へ移動</td></tr>
+          <tr><td><kbd>M</kbd></td><td>カレンダー 月表示</td></tr>
+          <tr><td><kbd>W</kbd></td><td>カレンダー 週表示</td></tr>
+          <tr><td><kbd>D</kbd></td><td>カレンダー 日表示</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>モーダルを保存</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>モーダルを閉じる</td></tr>
+          <tr><td><kbd>?</kbd></td><td>このヘルプを表示</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-shortcuts">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== モーダル: CSVインポート ===== -->
 <div class="modal-backdrop" id="modal-import">
   <div class="modal">
@@ -185,6 +225,7 @@
 <script src="js/calendar.js"></script>
 <script src="js/interviews.js"></script>
 <script src="js/csv.js"></script>
+<script src="js/dashboard.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
