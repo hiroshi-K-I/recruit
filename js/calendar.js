@@ -79,20 +79,25 @@ const Calendar = (() => {
     const ivMaster = Masters?.get?.('interviewers') || [];
     const ivNames  = (iv.interviewerIds || [])
       .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean);
+    const shown    = ivNames.slice(0, 2);
+    const extra    = ivNames.length > 2 ? ` 他${ivNames.length - 2}名` : '';
     const location = iv.location || (iv.onlineUrl ? 'オンライン' : '');
-    if (!ivNames.length && !location) return '';
+    if (!shown.length && !location) return '';
     return `<div class="block-detail">
-      ${ivNames.length ? `<span class="block-detail-iv">${ivNames.map(n => Utils.esc(n)).join('・')}</span>` : ''}
-      ${location       ? `<span class="block-detail-room">${Utils.esc(location)}</span>` : ''}
+      ${shown.length ? `<span class="block-detail-iv">${shown.map(n => Utils.esc(n)).join('・')}${Utils.esc(extra)}</span>` : ''}
+      ${location     ? `<span class="block-detail-room">${Utils.esc(location)}</span>` : ''}
     </div>`;
   }
 
   // ===== チップ用: 面接官名・会議室名（コンパクト） =====
   function chipDetailHtml(iv) {
     const ivMaster = Masters?.get?.('interviewers') || [];
-    const first    = ivMaster.find(x => x.id === iv.interviewerIds?.[0]);
+    const ivNames  = (iv.interviewerIds || [])
+      .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean);
+    const shown    = ivNames.slice(0, 2);
+    const extra    = ivNames.length > 2 ? ` 他${ivNames.length - 2}名` : '';
     const location = iv.location || (iv.onlineUrl ? 'オンライン' : '');
-    const parts    = [...(first ? [first.name] : []), ...(location ? [location] : [])];
+    const parts    = [...(shown.length ? [shown.join('・') + extra] : []), ...(location ? [location] : [])];
     if (!parts.length) return '';
     return `<div class="chip-detail">${Utils.esc(parts.join(' / '))}</div>`;
   }
