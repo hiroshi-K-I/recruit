@@ -544,3 +544,241 @@ kbd {
 .conflict-import { background:#EFF6FF; }
 .conflict-choice { display:flex; gap:20px; padding:10px 14px; background:#FEFCE8; border-top:1px solid #FCD34D; }
 .conflict-choice label { font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+/* ===== 手配ドット (月チップ) ===== */
+.arr-dots-sm {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+.arr-dot-sm {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #D1D5DB;
+  flex-shrink: 0;
+}
+.arr-dot-sm.ok { background: #10B981; }
+.arr-dot-sm.ng { background: #F59E0B; }
+
+/* ===== 手配ドット (週/日ブロック) ===== */
+.arr-dots-blk {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+}
+.arr-dot-blk {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+.arr-dot-blk.ok { background: rgba(255,255,255,0.9); }
+.arr-dot-blk.ng { background: rgba(251,191,36,0.85); }
+
+/* ===== 手配リストビュー ===== */
+.arr-list-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+.arr-summary {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--gray-600);
+}
+.arr-summary-done { color: #10B981; font-weight: 600; }
+.arr-summary-pend { color: #F59E0B; font-weight: 600; }
+
+.arr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.arr-table th {
+  background: var(--gray-50);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--gray-200);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.arr-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+}
+.arr-th-chk {
+  text-align: center !important;
+  line-height: 1.4;
+  font-size: 12px;
+}
+.arr-row-ok {
+  background: rgba(16, 185, 129, 0.06);
+}
+.arr-table tbody tr:hover { background: rgba(99,102,241,0.04); }
+.arr-row-ok:hover          { background: rgba(16,185,129,0.10) !important; }
+
+.arr-check-cell {
+  text-align: center;
+}
+.arr-check-cell input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #10B981;
+}
+.arr-na { color: var(--gray-300); font-size: 14px; }
+.arr-guide-name {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* ===== 合格率バーチャート ===== */
+.pass-rate-grid {
+  display: flex;
+  gap: 32px;
+  align-items: flex-end;
+  padding: 8px 16px 4px;
+  justify-content: center;
+}
+.pass-rate-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90px;
+}
+.pass-rate-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  text-align: center;
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+.pass-rate-bar-wrap {
+  width: 52px;
+  height: 90px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--gray-100);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.pass-rate-bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.4s ease;
+  min-height: 3px;
+}
+.pass-rate-pct {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.pass-rate-count {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* ===== シミュレーター ===== */
+.sim-card { margin-bottom: 0; }
+.sim-layout {
+  display: flex;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .sim-layout { flex-direction: column; }
+}
+.sim-inputs {
+  width: 360px;
+  flex-shrink: 0;
+}
+.sim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sim-label {
+  width: 130px;
+  font-size: 13px;
+  color: var(--gray-600);
+  flex-shrink: 0;
+}
+.sim-slider {
+  flex: 1;
+  accent-color: #6366F1;
+}
+.sim-pct {
+  width: 36px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-align: right;
+  flex-shrink: 0;
+}
+.sim-actual {
+  font-size: 11px;
+  color: var(--gray-400);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sim-num-input {
+  width: 72px !important;
+}
+.sim-unit {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+.sim-funnel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.sim-funnel-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sim-funnel-bar-wrap {
+  flex: 1;
+}
+.sim-funnel-bar {
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  transition: width 0.25s ease;
+  min-width: 4px;
+}
+.sim-funnel-count {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sim-funnel-label {
+  font-size: 12px;
+  color: var(--gray-600);
+  min-width: 130px;
+  white-space: nowrap;
+}
+.sim-funnel-pct {
+  color: var(--gray-400);
+  font-size: 11px;
+  margin-left: 4px;
+}

@@ -1,7 +1,8 @@
 const Candidates = (() => {
   const SELECTION_STATUSES = [
     '書類選考中','1次面接待ち','1次面接済','2次面接待ち','2次面接済',
-    '最終面接待ち','最終面接済','内定','辞退','不採用',
+    '役員面接待ち','役員面接済',
+    '最終面接待ち','最終面接済','内定','内定承諾','辞退','不採用',
   ];
 
   const STATUS_COLOR = {
@@ -10,9 +11,12 @@ const Candidates = (() => {
     '1次面接済':   'badge-blue',
     '2次面接待ち': 'badge-blue',
     '2次面接済':   'badge-blue',
+    '役員面接待ち':'badge-yellow',
+    '役員面接済':  'badge-yellow',
     '最終面接待ち':'badge-purple',
     '最終面接済':  'badge-purple',
     '内定':        'badge-green',
+    '内定承諾':    'badge-green',
     '辞退':        'badge-gray',
     '不採用':      'badge-red',
   };

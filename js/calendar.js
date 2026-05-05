@@ -1,22 +1,24 @@
 const Calendar = (() => {
-  const CAL_START   = 7;
-  const CAL_END     = 22;
-  const PX_PER_MIN  = 1;
-  const SNAP_MIN    = 15;
+  const CAL_START  = 7;
+  const CAL_END    = 22;
+  const PX_PER_MIN = 1;
+  const SNAP_MIN   = 15;
 
   let currentView = 'month';
   let currentDate = new Date();
   let interviews  = [];
-  let onClickSlot   = null;
-  let onClickBlock  = null;
-  let onMoveBlock   = null;
-  let onResizeBlock = null;
+  let onClickSlot         = null;
+  let onClickBlock        = null;
+  let onMoveBlock         = null;
+  let onResizeBlock       = null;
+  let onToggleArrangement = null;
 
   function init(opts) {
-    onClickSlot   = opts.onClickSlot;
-    onClickBlock  = opts.onClickBlock;
-    onMoveBlock   = opts.onMoveBlock;
-    onResizeBlock = opts.onResizeBlock;
+    onClickSlot         = opts.onClickSlot;
+    onClickBlock        = opts.onClickBlock;
+    onMoveBlock         = opts.onMoveBlock;
+    onResizeBlock       = opts.onResizeBlock;
+    onToggleArrangement = opts.onToggleArrangement;
   }
 
   function setInterviews(data) { interviews = data; }
@@ -31,6 +33,8 @@ const Calendar = (() => {
   function navigate(dir) {
     if (currentView === 'month') {
       currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
+    } else if (currentView === 'arrangement') {
+      currentDate = addDays(currentDate, dir * 7);
     } else if (currentView === 'week') {
       currentDate = addDays(currentDate, dir * 7);
     } else {
@@ -45,9 +49,10 @@ const Calendar = (() => {
     const container = document.getElementById('calendar-container');
     if (!container) return;
     updateTitle();
-    if (currentView === 'month')     renderMonth(container);
-    else if (currentView === 'week') renderWeekDay(container, 7);
-    else                             renderWeekDay(container, 1);
+    if      (currentView === 'month')       renderMonth(container);
+    else if (currentView === 'week')        renderWeekDay(container, 7);
+    else if (currentView === 'arrangement') renderArrangement(container);
+    else                                    renderWeekDay(container, 1);
   }
 
   function updateTitle() {
@@ -57,6 +62,9 @@ const Calendar = (() => {
     const m = currentDate.getMonth() + 1;
     if (currentView === 'month') {
       title.textContent = `${y}年${m}月`;
+    } else if (currentView === 'arrangement') {
+      const we = addDays(currentDate, 13);
+      title.textContent = `手配確認: ${Utils.formatDate(currentDate)} 〜 ${Utils.formatDate(we)}`;
     } else if (currentView === 'week') {
       const ws = weekStart(currentDate);
       const we = addDays(ws, 6);
@@ -66,15 +74,29 @@ const Calendar = (() => {
     }
   }
 
+  // ===== 手配ドット =====
+  function arrDotsHtml(iv, size) {
+    const ac = iv.arrangementsChecked || {};
+    const ng = Interviews?.needsGuide?.(iv.round);
+    const items = [
+      { checked: ac.interviewer, label: '面接官手配' },
+      { checked: ac.room,        label: '会議室手配' },
+      ...(ng ? [{ checked: ac.guide, label: '案内係手配' }] : []),
+    ];
+    return `<div class="arr-dots-${size}">${items.map(it =>
+      `<span class="arr-dot-${size} ${it.checked ? 'ok' : 'ng'}" title="${it.label}"></span>`
+    ).join('')}</div>`;
+  }
+
   // ===================== 月表示 =====================
   function renderMonth(container) {
-    const year   = currentDate.getFullYear();
-    const month  = currentDate.getMonth();
-    const first  = new Date(year, month, 1);
-    const today  = Utils.formatDate(new Date());
-    const start  = addDays(first, -first.getDay());
-    const days   = Array.from({length: 42}, (_, i) => addDays(start, i));
-    const WD     = ['日','月','火','水','木','金','土'];
+    const year  = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const first = new Date(year, month, 1);
+    const today = Utils.formatDate(new Date());
+    const start = addDays(first, -first.getDay());
+    const days  = Array.from({length: 42}, (_, i) => addDays(start, i));
+    const WD    = ['日','月','火','水','木','金','土'];
 
     let html = `<div class="cal-month">
       <div class="cal-month-header">
@@ -97,6 +119,7 @@ const Calendar = (() => {
           data-id="${iv.id}" title="${Utils.esc(label)}">
           ${Utils.esc(iv.startTime)} ${Utils.esc(label)}
           <span class="chip-cap">${cnt}/${max}</span>
+          ${arrDotsHtml(iv, 'sm')}
         </div>`;
       }).join('');
       const more = dayIvs.length > 3
@@ -112,14 +135,11 @@ const Calendar = (() => {
     html += `</div></div>`;
     container.innerHTML = html;
 
-    // セルクリック（空白部分）
     container.querySelectorAll('.cal-month-cell').forEach(cell => {
       cell.addEventListener('click', e => {
         if (e.target.closest('.cell-event-chip')) return;
         onClickSlot && onClickSlot(cell.dataset.date, '10:00', '11:00');
       });
-
-      // ドロップターゲット
       cell.addEventListener('dragover', e => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
@@ -137,7 +157,6 @@ const Calendar = (() => {
       });
     });
 
-    // チップ：クリック & ドラッグ
     container.querySelectorAll('.cell-event-chip').forEach(chip => {
       chip.addEventListener('click', e => {
         e.stopPropagation();
@@ -155,12 +174,12 @@ const Calendar = (() => {
 
   // ===================== 週/日表示 =====================
   function renderWeekDay(container, days) {
-    const startD     = days === 7 ? weekStart(currentDate) : currentDate;
-    const cols       = Array.from({length: days}, (_, i) => addDays(startD, i));
-    const today      = Utils.formatDate(new Date());
-    const totalMins  = (CAL_END - CAL_START) * 60;
-    const totalH     = totalMins * PX_PER_MIN;
-    const WD         = ['日','月','火','水','木','金','土'];
+    const startD    = days === 7 ? weekStart(currentDate) : currentDate;
+    const cols      = Array.from({length: days}, (_, i) => addDays(startD, i));
+    const today     = Utils.formatDate(new Date());
+    const totalMins = (CAL_END - CAL_START) * 60;
+    const totalH    = totalMins * PX_PER_MIN;
+    const WD        = ['日','月','火','水','木','金','土'];
 
     let html = `<div class="cal-week-wrap">
       <div class="cal-week-header">
@@ -194,7 +213,6 @@ const Calendar = (() => {
         if (h < CAL_END) html += `<div class="cal-hour-line half" style="top:${top+30}px"></div>`;
       }
 
-      // 重複ブロックのレイアウト計算
       const laid = layoutBlocks(dayIvs);
       laid.forEach(({ iv, left, width }) => {
         const sMins  = Utils.timeToMinutes(iv.startTime) - CAL_START * 60;
@@ -213,12 +231,13 @@ const Calendar = (() => {
           <div class="block-title">${Utils.esc(iv.startTime)}〜${Utils.esc(iv.endTime)}</div>
           <div class="block-sub">${Utils.esc(ivLabel(iv))}</div>
           <div class="block-caps">${dots}</div>
+          ${arrDotsHtml(iv, 'blk')}
           <div class="block-resize-handle" data-id="${iv.id}"></div>
         </div>`;
       });
 
       if (ds === today) {
-        const now = new Date();
+        const now  = new Date();
         const nowM = now.getHours() * 60 + now.getMinutes() - CAL_START * 60;
         if (nowM >= 0 && nowM <= totalMins)
           html += `<div class="cal-now-line" style="top:${nowM * PX_PER_MIN}px"></div>`;
@@ -230,7 +249,6 @@ const Calendar = (() => {
     html += `</div></div></div>`;
     container.innerHTML = html;
 
-    // セルクリック
     container.querySelectorAll('.cal-week-col').forEach(col => {
       col.addEventListener('click', e => {
         if (e.target.closest('.interview-block')) return;
@@ -255,6 +273,95 @@ const Calendar = (() => {
     attachBlockDrag(container);
     attachBlockResize(container);
     attachDragCreate(container);
+  }
+
+  // ===================== 手配リスト表示 =====================
+  function renderArrangement(container) {
+    const startStr = Utils.formatDate(currentDate);
+    const endStr   = Utils.formatDate(addDays(currentDate, 13));
+
+    const upcoming = interviews
+      .filter(iv => iv.date >= startStr && iv.date <= endStr)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+
+    const ivMaster = Masters.get('interviewers');
+    const hrStaffs = Masters.get('hrStaff');
+
+    const total   = upcoming.length;
+    const doneAll = upcoming.filter(iv => {
+      const ac = iv.arrangementsChecked || {};
+      const ng = Interviews?.needsGuide?.(iv.round);
+      return ac.interviewer && ac.room && (!ng || ac.guide);
+    }).length;
+
+    let html = `<div class="arr-list-wrap">
+      <div class="arr-summary">
+        <span>全 <b>${total}</b> 件</span>
+        <span class="arr-summary-done">手配完了: <b>${doneAll}</b> 件</span>
+        <span class="arr-summary-pend">未完了: <b>${total - doneAll}</b> 件</span>
+      </div>
+      <table class="arr-table">
+        <thead>
+          <tr>
+            <th>日付</th><th>時刻</th><th>回次</th><th>候補者</th>
+            <th>面接官</th><th>場所</th>
+            <th class="arr-th-chk">面接官<br>手配</th>
+            <th class="arr-th-chk">会議室<br>手配</th>
+            <th class="arr-th-chk">案内係<br>手配</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    if (upcoming.length === 0) {
+      html += `<tr><td colspan="9" class="table-empty">この期間の面接はありません</td></tr>`;
+    } else {
+      upcoming.forEach(iv => {
+        const ac     = iv.arrangementsChecked || {};
+        const ng     = Interviews?.needsGuide?.(iv.round);
+        const ivNames = (iv.interviewerIds || [])
+          .map(id => ivMaster.find(x => x.id === id)?.name || '').filter(Boolean).join('・');
+        const guideNames = (iv.guideIds || [])
+          .map(id => hrStaffs.find(x => x.id === id)?.name || '').filter(Boolean).join('・');
+        const candNames = iv._candidateNames?.join('・') || '（空き）';
+        const allOk  = ac.interviewer && ac.room && (!ng || ac.guide);
+
+        html += `<tr class="${allOk ? 'arr-row-ok' : ''}" data-id="${iv.id}">
+          <td>${Utils.formatDateShort(iv.date)}</td>
+          <td style="white-space:nowrap">${Utils.esc(iv.startTime)}〜${Utils.esc(iv.endTime)}</td>
+          <td><span class="badge badge-blue">${Utils.esc(iv.round || '')}</span></td>
+          <td>${Utils.esc(candNames)}</td>
+          <td style="font-size:12px">${Utils.esc(ivNames)}</td>
+          <td style="font-size:12px">${Utils.esc(iv.location || iv.onlineUrl || '')}</td>
+          <td class="arr-check-cell">
+            <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="interviewer"
+              ${ac.interviewer ? 'checked' : ''}>
+          </td>
+          <td class="arr-check-cell">
+            <input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="room"
+              ${ac.room ? 'checked' : ''}>
+          </td>
+          <td class="arr-check-cell">
+            ${ng
+              ? `<input type="checkbox" class="arr-chk" data-id="${iv.id}" data-field="guide"
+                  ${ac.guide ? 'checked' : ''}>
+                 ${guideNames ? `<div class="arr-guide-name">${Utils.esc(guideNames)}</div>` : ''}`
+              : `<span class="arr-na">―</span>`}
+          </td>
+        </tr>`;
+      });
+    }
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.arr-chk').forEach(chk => {
+      chk.addEventListener('change', async () => {
+        const iv = interviews.find(x => x.id === Number(chk.dataset.id));
+        if (iv && onToggleArrangement) {
+          await onToggleArrangement(iv, chk.dataset.field);
+        }
+      });
+    });
   }
 
   // ===== 重複ブロックの横並びレイアウト =====
