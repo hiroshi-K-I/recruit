@@ -1,8 +1,7 @@
 const Candidates = (() => {
   const SELECTION_STATUSES = [
     '書類選考中','1次面接待ち','1次面接済','2次面接待ち','2次面接済',
-    '役員面接待ち','役員面接済',
-    '最終面接待ち','最終面接済','内定','内定承諾','辞退','不採用',
+    '役員面接待ち','役員面接済','内定','内定承諾','辞退','不採用',
   ];
 
   const JOB_TYPES = ['SE', 'IE', '営業', 'その他'];
@@ -15,8 +14,6 @@ const Candidates = (() => {
     '2次面接済':   'badge-blue',
     '役員面接待ち':'badge-yellow',
     '役員面接済':  'badge-yellow',
-    '最終面接待ち':'badge-purple',
-    '最終面接済':  'badge-purple',
     '内定':        'badge-green',
     '内定承諾':    'badge-green',
     '辞退':        'badge-gray',
@@ -132,110 +129,125 @@ const Candidates = (() => {
        <label for="star${n}" title="${n}">★</label>`
     ).join('');
 
+    const candInterviews = !isNew
+      ? (typeof Interviews !== 'undefined' ? Interviews.getAll().filter(iv => (iv.candidateIds||[]).includes(id)).sort((a,b) => b.date.localeCompare(a.date)) : [])
+      : [];
+
     document.getElementById('modal-cand-body').innerHTML = `
-      <!-- 氏名 + 採用種別 -->
-      <div class="form-row">
-        <div class="form-group" style="flex:2">
-          <label class="required">氏名</label>
-          <input type="text" id="f-name" class="form-control" value="${Utils.esc(c.name || '')}" placeholder="山田 太郎">
-          <div class="form-error" id="err-name"></div>
-        </div>
-        <div class="form-group">
-          <label>採用種別</label>
-          <div class="toggle-btn-group" id="f-recruit-btns">
-            ${['', '新卒', 'キャリア'].map(v =>
-              `<button class="toggle-btn${(c.recruitType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
-            ).join('')}
+      <div class="modal-2col">
+        <div class="modal-col">
+          <div class="form-group">
+            <label class="required">氏名</label>
+            <input type="text" id="f-name" class="form-control" value="${Utils.esc(c.name || '')}" placeholder="山田 太郎">
+            <div class="form-error" id="err-name"></div>
           </div>
-          <input type="hidden" id="f-recruit-type" value="${Utils.esc(c.recruitType || '')}">
-        </div>
-      </div>
-
-      <!-- 大学（チップフィルタ） -->
-      <div class="form-group">
-        <label>大学</label>
-        <input type="text" id="f-university" class="form-control"
-          value="${Utils.esc(c.university || '')}"
-          placeholder="${universities.length ? '絞り込み入力、または直接入力...' : '大学名を入力'}">
-        ${universities.length
-          ? `<div class="chip-toggle-group" id="univ-chip-list"
-               style="max-height:80px;overflow-y:auto;margin-top:6px;"></div>`
-          : ''}
-      </div>
-
-      <!-- 文理 + 職種 -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>文理</label>
-          <div class="toggle-btn-group" id="f-faculty-btns">
-            ${['', '文系', '理系', 'その他'].map(v =>
-              `<button class="toggle-btn${(c.facultyType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
-            ).join('')}
+          <div class="form-group">
+            <label>採用種別</label>
+            <div class="toggle-btn-group" id="f-recruit-btns">
+              ${['', '新卒', 'キャリア'].map(v =>
+                `<button class="toggle-btn${(c.recruitType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
+              ).join('')}
+            </div>
+            <input type="hidden" id="f-recruit-type" value="${Utils.esc(c.recruitType || '')}">
           </div>
-          <input type="hidden" id="f-faculty" value="${Utils.esc(c.facultyType || '')}">
-        </div>
-        <div class="form-group">
-          <label>職種</label>
-          <div class="toggle-btn-group" id="f-jobtype-btns">
-            ${JOB_TYPES.map(v =>
-              `<button class="toggle-btn${c.jobType === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${Utils.esc(v)}</button>`
-            ).join('')}
+          <div class="form-group">
+            <label>大学</label>
+            <input type="text" id="f-university" class="form-control"
+              value="${Utils.esc(c.university || '')}"
+              placeholder="${universities.length ? '絞り込み入力、または直接入力...' : '大学名を入力'}">
+            ${universities.length
+              ? `<div class="chip-toggle-group" id="univ-chip-list"
+                   style="max-height:64px;overflow-y:auto;margin-top:6px;"></div>`
+              : ''}
           </div>
-          <input type="hidden" id="f-jobtype" value="${Utils.esc(c.jobType || '')}">
+          <div class="form-group">
+            <label>文理</label>
+            <div class="toggle-btn-group" id="f-faculty-btns">
+              ${['', '文系', '理系', 'その他'].map(v =>
+                `<button class="toggle-btn${(c.facultyType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
+              ).join('')}
+            </div>
+            <input type="hidden" id="f-faculty" value="${Utils.esc(c.facultyType || '')}">
+          </div>
+          <div class="form-group">
+            <label>職種</label>
+            <div class="toggle-btn-group" id="f-jobtype-btns">
+              ${JOB_TYPES.map(v =>
+                `<button class="toggle-btn${c.jobType === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${Utils.esc(v)}</button>`
+              ).join('')}
+            </div>
+            <input type="hidden" id="f-jobtype" value="${Utils.esc(c.jobType || '')}">
+          </div>
         </div>
-      </div>
 
-      <!-- 担当者 -->
-      <div class="form-group">
-        <label>担当者</label>
-        ${hrStaffs.length
-          ? `<div class="chip-toggle-group" id="f-hrstaff-chips">
-               ${hrStaffs.map(s =>
-                 `<button class="chip-toggle${c.hrStaff === s ? ' selected' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
-               ).join('')}
-             </div>
-             <input type="hidden" id="f-hrstaff" value="${Utils.esc(c.hrStaff || '')}">`
-          : `<select id="f-hrstaff" class="form-control">
-               <option value="">--</option>
-               ${hrStaffs.map(s => `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`).join('')}
-             </select>`
-        }
-      </div>
-
-      <!-- 希望勤務地 -->
-      <div class="form-group">
-        <label>希望勤務地</label>
-        ${locations.length
-          ? `<div class="chip-toggle-group" id="f-loc-chips">
-               ${locations.map(l =>
-                 `<button class="chip-toggle${prefLocs.includes(l) ? ' selected' : ''}" data-val="${Utils.esc(l)}">${Utils.esc(l)}</button>`
-               ).join('')}
-             </div>`
-          : `<span style="font-size:12px;color:var(--gray-400);">（勤務地マスタ未登録）</span>`
-        }
-      </div>
-
-      <!-- 選考状況 -->
-      <div class="form-group">
-        <label>選考状況</label>
-        <div class="status-grid">
-          ${SELECTION_STATUSES.map(s =>
-            `<button class="status-chip${c.selectionStatus === s ? ' active' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
-          ).join('')}
+        <div class="modal-col">
+          <div class="form-group">
+            <label>担当者</label>
+            ${hrStaffs.length
+              ? `<div class="chip-toggle-group" id="f-hrstaff-chips">
+                   ${hrStaffs.map(s =>
+                     `<button class="chip-toggle${c.hrStaff === s ? ' selected' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
+                   ).join('')}
+                 </div>
+                 <input type="hidden" id="f-hrstaff" value="${Utils.esc(c.hrStaff || '')}">`
+              : `<select id="f-hrstaff" class="form-control">
+                   <option value="">--</option>
+                   ${hrStaffs.map(s => `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`).join('')}
+                 </select>`
+            }
+          </div>
+          <div class="form-group">
+            <label>希望勤務地</label>
+            ${locations.length
+              ? `<div class="chip-toggle-group" id="f-loc-chips">
+                   ${locations.map(l =>
+                     `<button class="chip-toggle${prefLocs.includes(l) ? ' selected' : ''}" data-val="${Utils.esc(l)}">${Utils.esc(l)}</button>`
+                   ).join('')}
+                 </div>`
+              : `<span style="font-size:12px;color:var(--gray-400);">（勤務地マスタ未登録）</span>`
+            }
+          </div>
+          <div class="form-group">
+            <label>選考状況</label>
+            <div class="status-grid">
+              ${SELECTION_STATUSES.map(s =>
+                `<button class="status-chip${c.selectionStatus === s ? ' active' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
+              ).join('')}
+            </div>
+            <input type="hidden" id="f-status" value="${Utils.esc(c.selectionStatus || '')}">
+          </div>
+          <div class="form-group">
+            <label>志望度</label>
+            <div class="star-rating">${stars}</div>
+          </div>
+          <div class="form-group">
+            <label>申送り</label>
+            <textarea id="f-notes" class="form-control">${Utils.esc(c.notes || '')}</textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>特記事項</label>
+            <textarea id="f-remarks" class="form-control">${Utils.esc(c.remarks || '')}</textarea>
+          </div>
         </div>
-        <input type="hidden" id="f-status" value="${Utils.esc(c.selectionStatus || '')}">
-      </div>
 
-      <!-- 志望度 -->
-      <div class="form-group">
-        <label>志望度</label>
-        <div class="star-rating">${stars}</div>
-      </div>
-
-      <!-- 特記事項 -->
-      <div class="form-group">
-        <label>特記事項</label>
-        <textarea id="f-remarks" class="form-control">${Utils.esc(c.remarks || '')}</textarea>
+        ${candInterviews.length > 0 ? `
+        <div class="modal-span2" style="margin-top:6px">
+          <hr class="section-divider" style="margin:8px 0 10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>面接履歴</label>
+            <div style="overflow-y:auto;max-height:72px;border:1px solid var(--gray-200);border-radius:var(--radius);">
+              ${candInterviews.slice(0,6).map(iv => {
+                const rCls = {'合格':'badge-green','不合格':'badge-red','辞退':'badge-gray','保留':'badge-purple'}[iv.result]||'badge-gray';
+                return `<div style="display:flex;gap:8px;padding:4px 10px;border-bottom:1px solid var(--gray-100);align-items:center;font-size:12px">
+                  <span style="color:var(--gray-500);white-space:nowrap">${Utils.esc(iv.date)}</span>
+                  <span class="badge badge-blue">${Utils.esc(iv.round||'')}</span>
+                  <span>${Utils.esc(iv.startTime||'')}〜${Utils.esc(iv.endTime||'')}</span>
+                  <span style="margin-left:auto" class="badge ${rCls}">${Utils.esc(iv.result||'未実施')}</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>` : ''}
       </div>`;
 
     // ===== 採用種別ボタン =====
@@ -354,6 +366,7 @@ const Candidates = (() => {
       preferredLocations: prefLocs,
       selectionStatus:    document.getElementById('f-status').value,
       motivation:         motiv,
+      notes:              document.getElementById('f-notes')?.value.trim() || '',
       remarks:            document.getElementById('f-remarks').value.trim(),
     };
 
@@ -369,6 +382,7 @@ const Candidates = (() => {
 
     closeBackdrop('modal-candidate');
     await load();
+    if (typeof Dashboard !== 'undefined') Dashboard.render();
   }
 
   // ===== 削除 =====
@@ -380,6 +394,7 @@ const Candidates = (() => {
     Utils.toast('候補者を削除しました', 'info');
     closeBackdrop('modal-candidate');
     await load();
+    if (typeof Dashboard !== 'undefined') Dashboard.render();
   }
 
   function getAll() { return allCandidates; }

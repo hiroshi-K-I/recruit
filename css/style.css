@@ -150,7 +150,7 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,.45); z-index: 1000;
   align-items: flex-start; justify-content: center;
-  padding: 40px 20px; overflow-y: auto;
+  padding: 16px 20px; overflow-y: auto;
 }
 .modal-backdrop.open { display: flex; }
 .modal {
@@ -166,7 +166,7 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
   padding: 18px 24px 14px; border-bottom: 1px solid var(--gray-200);
 }
 .modal-header h2 { font-size: 16px; font-weight: 700; }
-.modal-body { padding: 20px 24px; }
+.modal-body { padding: 14px 20px; max-height: calc(100vh - 152px); overflow-y: auto; }
 .modal-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;
   padding: 14px 24px; border-top: 1px solid var(--gray-200);
@@ -174,6 +174,14 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
 .modal-footer .btn-danger { margin-right: auto; }
 .btn-close { background: none; border: none; font-size: 20px; color: var(--gray-400); line-height: 1; padding: 2px 6px; border-radius: var(--radius); }
 .btn-close:hover { background: var(--gray-100); color: var(--gray-700); }
+.modal-body .form-group { margin-bottom: 10px; }
+.modal-body textarea.form-control { min-height: 52px; }
+
+/* ===== モーダル 2カラムレイアウト ===== */
+.modal-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.modal-iv-2col { grid-template-columns: 43% 1fr; }
+.modal-col { min-width: 0; }
+.modal-span2 { grid-column: span 2; }
 
 /* ===== 面接官二段階セレクタ ===== */
 .interviewer-selector { border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; }

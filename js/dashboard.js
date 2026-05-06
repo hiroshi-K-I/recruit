@@ -2,7 +2,7 @@ const Dashboard = (() => {
   const STATUSES = [
     '書類選考中','1次面接待ち','1次面接済','2次面接待ち','2次面接済',
     '役員面接待ち','役員面接済',
-    '最終面接待ち','最終面接済','内定','内定承諾','辞退','不採用',
+    '内定','内定承諾','辞退','不採用',
   ];
   const STATUS_COLOR = {
     '書類選考中':  '#9CA3AF',
@@ -12,8 +12,6 @@ const Dashboard = (() => {
     '2次面接済':   '#10B981',
     '役員面接待ち':'#FB923C',
     '役員面接済':  '#F97316',
-    '最終面接待ち':'#A78BFA',
-    '最終面接済':  '#8B5CF6',
     '内定':        '#16A34A',
     '内定承諾':    '#15803D',
     '辞退':        '#6B7280',
@@ -21,7 +19,7 @@ const Dashboard = (() => {
   };
 
   // シミュレータ状態（再描画をまたいで保持）
-  const sim = { initial: 100, r1: 60, r2: 70, re: 75, rf: 85, accept: 80 };
+  const sim = { initial: 100, r1: 60, r2: 70, re: 75, accept: 80 };
 
   function render() {
     const candidates = Candidates.getAll();
@@ -77,7 +75,7 @@ const Dashboard = (() => {
       .slice(0, 10);
 
     // ---- 回次別合格率 ----
-    const passRoundDefs = ['1次面接','2次面接','役員面接','最終面接'];
+    const passRoundDefs = ['1次面接','2次面接','役員面接'];
     const passRates = passRoundDefs.map(round => {
       const roundIvs = interviews.filter(iv => iv.round === round && iv.result && iv.result !== '未実施');
       const tot    = roundIvs.length;
@@ -156,7 +154,7 @@ const Dashboard = (() => {
                       const cnt = (iv.candidateIds||[]).length;
                       const max = Interviews.maxByRound(iv.round||'1次面接');
                       const resultCls = {合格:'badge-green',不合格:'badge-red',辞退:'badge-gray',保留:'badge-purple'}[iv.result]||'badge-gray';
-                      return `<tr class="db-table-row" data-id="${iv.id}">
+                      return `<tr class="db-table-row db-iv-row" data-id="${iv.id}">
                         <td>${Utils.formatDateShort(iv.date)}</td>
                         <td>${Utils.esc(iv.startTime)}〜${Utils.esc(iv.endTime)}</td>
                         <td><span class="badge badge-blue">${Utils.esc(iv.round||'')}</span></td>
@@ -199,7 +197,7 @@ const Dashboard = (() => {
           <div class="pass-rate-grid">
             ${passRates.map(pr => {
               const pct = pr.rate ?? 0;
-              const color = { '1次面接':'#3B82F6','2次面接':'#10B981','役員面接':'#F97316','最終面接':'#8B5CF6' }[pr.round] || '#6366F1';
+              const color = { '1次面接':'#3B82F6','2次面接':'#10B981','役員面接':'#F97316' }[pr.round] || '#6366F1';
               return `<div class="pass-rate-item">
                 <div class="pass-rate-label">${pr.round}</div>
                 <div class="pass-rate-bar-wrap">
@@ -228,7 +226,6 @@ const Dashboard = (() => {
                 {id:'sim-r1', label:'1次面接 通過率', key:'r1', act: passRates[0].rate},
                 {id:'sim-r2', label:'2次面接 通過率', key:'r2', act: passRates[1].rate},
                 {id:'sim-re', label:'役員面接 通過率', key:'re', act: passRates[2].rate},
-                {id:'sim-rf', label:'最終面接 通過率', key:'rf', act: passRates[3].rate},
                 {id:'sim-ac', label:'内定承諾率',      key:'accept', act: null},
               ].map(row => `
                 <div class="sim-row">
@@ -273,6 +270,9 @@ const Dashboard = (() => {
     container.querySelectorAll('.db-cand-row').forEach(row => {
       row.addEventListener('click', () => Candidates.openModal(Number(row.dataset.id)));
     });
+    container.querySelectorAll('.db-iv-row').forEach(row => {
+      row.addEventListener('click', () => Interviews.openModal(Number(row.dataset.id)));
+    });
 
     attachSimulator();
   }
@@ -282,21 +282,18 @@ const Dashboard = (() => {
     const r1 = sim.r1 / 100;
     const r2 = sim.r2 / 100;
     const re = sim.re / 100;
-    const rf = sim.rf / 100;
     const ac = sim.accept / 100;
 
     const n1 = Math.round(n  * r1);
     const n2 = Math.round(n1 * r2);
     const ne = Math.round(n2 * re);
-    const nf = Math.round(ne * rf);
-    const na = Math.round(nf * ac);
+    const na = Math.round(ne * ac);
 
     const steps = [
       { label: '書類通過',     count: n,  color: '#6366F1' },
       { label: '1次面接 通過', count: n1, color: '#3B82F6' },
       { label: '2次面接 通過', count: n2, color: '#0891B2' },
       { label: '役員面接 通過',count: ne, color: '#10B981' },
-      { label: '最終面接 通過',count: nf, color: '#16A34A' },
       { label: '内定承諾',     count: na, color: '#15803D' },
     ];
 
@@ -305,7 +302,7 @@ const Dashboard = (() => {
 
     funnel.innerHTML = steps.map((step, i) => {
       const pct = n > 0 ? Math.round(step.count / n * 100) : 0;
-      const w   = 100 - i * 10;
+      const w   = 100 - i * 12;
       return `<div class="sim-funnel-step">
         <div class="sim-funnel-bar-wrap">
           <div class="sim-funnel-bar" style="width:${w}%;background:${step.color}">
@@ -330,7 +327,6 @@ const Dashboard = (() => {
       ['sim-r1', 'r1'],
       ['sim-r2', 'r2'],
       ['sim-re', 're'],
-      ['sim-rf', 'rf'],
       ['sim-ac', 'accept'],
     ].forEach(([id, key]) => {
       const el = document.getElementById(id);

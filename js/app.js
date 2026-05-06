@@ -172,7 +172,8 @@
       case 't': case 'T': Calendar.goToday(); break;
       case 'm': case 'M': Calendar.setView('month'); break;
       case 'w': case 'W': Calendar.setView('week');  break;
-      case 'd': case 'D': Calendar.setView('day');   break;
+      case 'd': case 'D': Calendar.setView('day');         break;
+      case 'a': case 'A': Calendar.setView('arrangement'); break;
       case '?':           openBackdrop('modal-shortcuts'); break;
     }
   });

@@ -24,7 +24,7 @@ const CSV = (() => {
 
   // ===== 面接エクスポート =====
   function exportInterviews(interviews, interviewers) {
-    const headers = ['id','面接日','開始時刻','終了時刻','候補者名','面接官','面接形式','面接場所','オンラインURL','面接結果','申送り','登録日時','更新日時'];
+    const headers = ['id','面接日','開始時刻','終了時刻','面接回次','候補者名','面接官','面接形式','面接場所','オンラインURL','面接結果','申送り','登録日時','更新日時'];
     const rows = interviews.map(iv => {
       const ivNames = (iv.interviewerIds || [])
         .map(id => interviewers.find(x => x.id === id)?.name || '')
@@ -34,7 +34,8 @@ const CSV = (() => {
         iv.date || '',
         iv.startTime || '',
         iv.endTime || '',
-        iv._candidateName || '',
+        iv.round || '',
+        (iv._candidateNames || []).join('・') || iv._candidateName || '',
         ivNames,
         iv.format || '',
         iv.location || '',

@@ -7,7 +7,14 @@ const Interviews = (() => {
   const ROUND_STATUS = {
     '1次面接': '1次面接待ち',
     '2次面接': '2次面接待ち',
-    '役員面接': '最終面接待ち',
+    '役員面接': '役員面接待ち',
+  };
+
+  // 面接結果 → 候補者選考状況の自動更新マッピング
+  const RESULT_TO_NEXT_STATUS = {
+    '1次面接':  { '合格': '2次面接待ち',  '不合格': '不採用', '辞退': '辞退' },
+    '2次面接':  { '合格': '役員面接待ち', '不合格': '不採用', '辞退': '辞退' },
+    '役員面接': { '合格': '内定',         '不合格': '不採用', '辞退': '辞退' },
   };
 
   function maxByRound(round) {
@@ -118,96 +125,101 @@ const Interviews = (() => {
            value="${Utils.esc(iv.location || '')}" placeholder="会議室名など">`;
 
     document.getElementById('modal-iv-body').innerHTML = `
-      <div class="form-row">
-        <div class="form-group">
-          <label class="required">面接日</label>
-          <input type="date" id="iv-date" class="form-control" value="${Utils.esc(date)}">
-        </div>
-        <div class="form-group">
-          <label class="required">開始時刻</label>
-          <input type="text" id="iv-start" class="form-control" value="${Utils.esc(start)}" placeholder="--:--">
-        </div>
-        <div class="form-group">
-          <label class="required">終了時刻</label>
-          <input type="text" id="iv-end" class="form-control" value="${Utils.esc(end)}" placeholder="--:--">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>面接回次</label>
-        <div class="toggle-btn-group" id="iv-round-btns">
-          ${ROUNDS.map(r =>
-            `<button class="toggle-btn${round === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
-          ).join('')}
-        </div>
-        <input type="hidden" id="iv-round" value="${Utils.esc(round)}">
-      </div>
-
-      <div class="form-group">
-        <label>候補者
-          <span id="iv-cap-label" class="cap-label" style="margin-left:8px;font-size:12px;color:var(--gray-500)">（0/${maxByRound(round)}名）</span>
-        </label>
-        <div id="iv-candidate-area"></div>
-      </div>
-
-      <div class="form-group">
-        <label>面接官</label>
-        <div id="iv-interviewer-selector"></div>
-      </div>
-
-      <div class="form-group" id="iv-guide-wrap" style="${needsGuide(round) ? '' : 'display:none'}">
-        <label>案内係 <span style="font-size:11px;color:var(--gray-400)">（2次・役員面接のみ）</span></label>
-        <div class="chip-toggle-group" id="iv-guide-area"></div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>面接形式</label>
-          <div class="toggle-btn-group" id="iv-format-btns">
-            <button class="toggle-btn${format === 'リアル'    ? ' active' : ''}" data-val="リアル">リアル</button>
-            <button class="toggle-btn${format === 'オンライン' ? ' active' : ''}" data-val="オンライン">オンライン</button>
+      <div class="modal-2col modal-iv-2col">
+        <div class="modal-col">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="required">面接日</label>
+              <input type="date" id="iv-date" class="form-control" value="${Utils.esc(date)}">
+            </div>
+            <div class="form-group">
+              <label class="required">開始</label>
+              <input type="text" id="iv-start" class="form-control" value="${Utils.esc(start)}" placeholder="--:--">
+            </div>
+            <div class="form-group">
+              <label class="required">終了</label>
+              <input type="text" id="iv-end" class="form-control" value="${Utils.esc(end)}" placeholder="--:--">
+            </div>
           </div>
-          <input type="hidden" id="iv-format" value="${Utils.esc(format)}">
-        </div>
-        <div class="form-group">
-          <label>面接結果</label>
-          <div class="result-btn-group">
-            ${RESULTS.map(r =>
-              `<button class="result-btn result-btn-${RESULT_CSS[r]}${result === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
-            ).join('')}
+
+          <div class="form-group">
+            <label>面接回次</label>
+            <div class="toggle-btn-group" id="iv-round-btns">
+              ${ROUNDS.map(r =>
+                `<button class="toggle-btn${round === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
+              ).join('')}
+            </div>
+            <input type="hidden" id="iv-round" value="${Utils.esc(round)}">
           </div>
-          <input type="hidden" id="iv-result" value="${Utils.esc(result)}">
+
+          <div class="form-group">
+            <label>候補者
+              <span id="iv-cap-label" class="cap-label" style="margin-left:8px;font-size:12px;color:var(--gray-500)">（0/${maxByRound(round)}名）</span>
+            </label>
+            <div id="iv-candidate-area"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="form-group" id="iv-location-wrap" style="${format === 'オンライン' ? 'display:none' : ''}">
-        <label>面接場所</label>
-        ${locationBodyHtml}
-      </div>
-      <div class="form-group" id="iv-url-wrap" style="${format === 'リアル' ? 'display:none' : ''}">
-        <label>オンラインURL</label>
-        <input type="text" id="iv-online-url" class="form-control" value="${Utils.esc(iv.onlineUrl || '')}" placeholder="https://...">
-      </div>
+        <div class="modal-col">
+          <div class="form-group">
+            <label>面接官</label>
+            <div id="iv-interviewer-selector"></div>
+          </div>
 
-      <hr class="section-divider">
-      <div class="form-group">
-        <label>手配確認状況</label>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
-          <label style="display:inline-flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer">
-            <input type="checkbox" id="arr-interviewer" ${ac.interviewer ? 'checked' : ''}> 面接官 確認済み
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer">
-            <input type="checkbox" id="arr-room" ${ac.room ? 'checked' : ''}> 会議室 確認済み
-          </label>
-          <label id="arr-guide-lbl" style="display:${needsGuide(round) ? 'inline-flex' : 'none'};align-items:center;gap:6px;font-weight:normal;cursor:pointer">
-            <input type="checkbox" id="arr-guide" ${ac.guide ? 'checked' : ''}> 案内係 確認済み
-          </label>
+          <div class="form-group" id="iv-guide-wrap" style="${needsGuide(round) ? '' : 'display:none'}">
+            <label>案内係 <span style="font-size:11px;color:var(--gray-400)">（2次・役員のみ）</span></label>
+            <div class="chip-toggle-group" id="iv-guide-area"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>面接形式</label>
+              <div class="toggle-btn-group" id="iv-format-btns">
+                <button class="toggle-btn${format === 'リアル'    ? ' active' : ''}" data-val="リアル">リアル</button>
+                <button class="toggle-btn${format === 'オンライン' ? ' active' : ''}" data-val="オンライン">オンライン</button>
+              </div>
+              <input type="hidden" id="iv-format" value="${Utils.esc(format)}">
+            </div>
+            <div class="form-group">
+              <label>面接結果</label>
+              <div class="result-btn-group">
+                ${RESULTS.map(r =>
+                  `<button class="result-btn result-btn-${RESULT_CSS[r]}${result === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
+                ).join('')}
+              </div>
+              <input type="hidden" id="iv-result" value="${Utils.esc(result)}">
+            </div>
+          </div>
+
+          <div class="form-group" id="iv-location-wrap" style="${format === 'オンライン' ? 'display:none' : ''}">
+            <label>面接場所</label>
+            ${locationBodyHtml}
+          </div>
+          <div class="form-group" id="iv-url-wrap" style="${format === 'リアル' ? 'display:none' : ''}">
+            <label>オンラインURL</label>
+            <input type="text" id="iv-online-url" class="form-control" value="${Utils.esc(iv.onlineUrl || '')}" placeholder="https://...">
+          </div>
+
+          <div class="form-group">
+            <label>手配確認</label>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;">
+              <label style="display:inline-flex;align-items:center;gap:5px;font-weight:normal;cursor:pointer;font-size:13px">
+                <input type="checkbox" id="arr-interviewer" ${ac.interviewer ? 'checked' : ''}> 面接官済
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:5px;font-weight:normal;cursor:pointer;font-size:13px">
+                <input type="checkbox" id="arr-room" ${ac.room ? 'checked' : ''}> 会議室済
+              </label>
+              <label id="arr-guide-lbl" style="display:${needsGuide(round) ? 'inline-flex' : 'none'};align-items:center;gap:5px;font-weight:normal;cursor:pointer;font-size:13px">
+                <input type="checkbox" id="arr-guide" ${ac.guide ? 'checked' : ''}> 案内係済
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0">
+            <label>申送り</label>
+            <textarea id="iv-notes" class="form-control">${Utils.esc(iv.notes || '')}</textarea>
+          </div>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label>申送り</label>
-        <textarea id="iv-notes" class="form-control">${Utils.esc(iv.notes || '')}</textarea>
       </div>`;
 
     // ===== タイムピッカー =====
@@ -466,8 +478,25 @@ const Interviews = (() => {
       Utils.toast('面接枠を登録しました');
     }
 
+    // 面接結果→候補者選考状況の自動更新提案
+    const nextStatus = RESULT_TO_NEXT_STATUS[data.round]?.[data.result];
+    if (nextStatus && data.candidateIds.length > 0) {
+      const cands   = Candidates.getAll();
+      const targets = data.candidateIds.map(id => cands.find(c => c.id === id)).filter(Boolean);
+      if (targets.length > 0) {
+        const names = targets.map(c => c.name).join('、');
+        if (Utils.confirm(`${names} の選考状況を「${nextStatus}」に更新しますか？`)) {
+          for (const cand of targets) {
+            await DB.put(DB.STORES.CANDIDATES, Sync.stamp({ ...cand, selectionStatus: nextStatus }));
+          }
+          await Candidates.load();
+        }
+      }
+    }
+
     closeBackdrop('modal-interview');
     await load();
+    if (typeof Dashboard !== 'undefined') Dashboard.render();
   }
 
   // ===== 削除 =====
@@ -480,6 +509,7 @@ const Interviews = (() => {
     Utils.toast('面接枠を削除しました', 'info');
     closeBackdrop('modal-interview');
     await load();
+    if (typeof Dashboard !== 'undefined') Dashboard.render();
   }
 
   function getAll() { return allInterviews; }

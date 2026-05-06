@@ -90,7 +90,7 @@ const Utils = (() => {
 
   // 面接結果 → カレンダーブロック色クラス
   function resultColorClass(interview) {
-    if (!interview.candidateId) return 'block-empty';
+    if (!interview.candidateIds?.length && !interview.candidateId) return 'block-empty';
     switch (interview.result) {
       case '合格':  return 'block-pass';
       case '不合格': return 'block-fail';

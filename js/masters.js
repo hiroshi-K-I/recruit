@@ -268,7 +268,23 @@ const Masters = (() => {
   }
 
   async function deleteItem(key, id) {
-    const def = DEFS[key];
+    const def  = DEFS[key];
+    const item = get(key).find(x => x.id === id);
+    if (key === 'interviewers') {
+      const inUse = (typeof Interviews !== 'undefined' ? Interviews.getAll() : [])
+        .some(iv => (iv.interviewerIds || []).includes(id));
+      if (inUse && !Utils.confirm(`この面接官は面接枠で使用中です。削除すると担当者情報が失われます。削除しますか？`)) return;
+    } else if (key === 'hrStaff') {
+      const nameInUse = (typeof Candidates !== 'undefined' ? Candidates.getAll() : [])
+        .some(c => c.hrStaff === item?.name);
+      const idInUse   = (typeof Interviews !== 'undefined' ? Interviews.getAll() : [])
+        .some(iv => (iv.guideIds || []).includes(id));
+      if ((nameInUse || idInUse) && !Utils.confirm(`この担当者は候補者または面接枠（案内係）で使用中です。削除しますか？`)) return;
+    } else if (key === 'rooms') {
+      const inUse = (typeof Interviews !== 'undefined' ? Interviews.getAll() : [])
+        .some(iv => iv.location === item?.name);
+      if (inUse && !Utils.confirm(`この面接場所は面接枠で使用中です。削除しますか？`)) return;
+    }
     await DB.remove(def.store, id);
     await refresh(key);
     renderMasterTable(key, document.getElementById('masters-content'));
