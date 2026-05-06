@@ -8,7 +8,6 @@ const Interviews = (() => {
     return 2;
   }
 
-  // 案内係が必要な回次
   function needsGuide(round) {
     return ['2次面接','役員面接'].includes(round);
   }
@@ -93,6 +92,24 @@ const Interviews = (() => {
     const rooms    = Masters.get('rooms').map(r => r.name);
     const hrStaffs = Masters.get('hrStaff');
 
+    // 面接場所 HTML 生成
+    const isCustomLocation = !!(iv.location && !rooms.includes(iv.location));
+    const locationBodyHtml = rooms.length
+      ? `<div class="chip-toggle-group" id="iv-room-chips">
+           ${rooms.map(r =>
+             `<button class="chip-toggle${iv.location === r ? ' selected' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
+           ).join('')}
+           <button class="chip-toggle${isCustomLocation ? ' selected' : ''}" data-val="__other__">その他</button>
+         </div>
+         <div id="iv-location-custom-wrap" style="margin-top:6px;${isCustomLocation ? '' : 'display:none'}">
+           <input type="text" id="iv-location-custom" class="form-control"
+             placeholder="場所名を直接入力..."
+             value="${isCustomLocation ? Utils.esc(iv.location) : ''}">
+         </div>
+         <input type="hidden" id="iv-location" value="${Utils.esc(iv.location || '')}">`
+      : `<input type="text" id="iv-location" class="form-control"
+           value="${Utils.esc(iv.location || '')}" placeholder="会議室名など">`;
+
     document.getElementById('modal-iv-body').innerHTML = `
       <div class="form-row">
         <div class="form-group">
@@ -101,11 +118,11 @@ const Interviews = (() => {
         </div>
         <div class="form-group">
           <label class="required">開始時刻</label>
-          <input type="text" id="iv-start" class="form-control" value="${Utils.esc(start)}" readonly placeholder="--:--">
+          <input type="text" id="iv-start" class="form-control" value="${Utils.esc(start)}" placeholder="--:--">
         </div>
         <div class="form-group">
           <label class="required">終了時刻</label>
-          <input type="text" id="iv-end" class="form-control" value="${Utils.esc(end)}" readonly placeholder="--:--">
+          <input type="text" id="iv-end" class="form-control" value="${Utils.esc(end)}" placeholder="--:--">
         </div>
       </div>
 
@@ -139,10 +156,11 @@ const Interviews = (() => {
       <div class="form-row">
         <div class="form-group">
           <label>面接形式</label>
-          <div class="radio-group">
-            <label><input type="radio" name="iv-format" value="リアル"    ${format === 'リアル'    ? 'checked' : ''}> リアル</label>
-            <label><input type="radio" name="iv-format" value="オンライン" ${format === 'オンライン' ? 'checked' : ''}> オンライン</label>
+          <div class="toggle-btn-group" id="iv-format-btns">
+            <button class="toggle-btn${format === 'リアル'    ? ' active' : ''}" data-val="リアル">リアル</button>
+            <button class="toggle-btn${format === 'オンライン' ? ' active' : ''}" data-val="オンライン">オンライン</button>
           </div>
+          <input type="hidden" id="iv-format" value="${Utils.esc(format)}">
         </div>
         <div class="form-group">
           <label>面接結果</label>
@@ -154,9 +172,10 @@ const Interviews = (() => {
           <input type="hidden" id="iv-result" value="${Utils.esc(result)}">
         </div>
       </div>
+
       <div class="form-group" id="iv-location-wrap" style="${format === 'オンライン' ? 'display:none' : ''}">
         <label>面接場所</label>
-        <input type="text" id="iv-location" class="form-control" value="${Utils.esc(iv.location || '')}" placeholder="会議室名など">
+        ${locationBodyHtml}
       </div>
       <div class="form-group" id="iv-url-wrap" style="${format === 'リアル' ? 'display:none' : ''}">
         <label>オンラインURL</label>
@@ -166,14 +185,14 @@ const Interviews = (() => {
       <hr class="section-divider">
       <div class="form-group">
         <label>手配確認状況</label>
-        <div class="arr-check-group" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
           <label style="display:inline-flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer">
             <input type="checkbox" id="arr-interviewer" ${ac.interviewer ? 'checked' : ''}> 面接官 確認済み
           </label>
           <label style="display:inline-flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer">
             <input type="checkbox" id="arr-room" ${ac.room ? 'checked' : ''}> 会議室 確認済み
           </label>
-          <label id="arr-guide-lbl" style="display:inline-flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;${needsGuide(round) ? '' : 'display:none'}">
+          <label id="arr-guide-lbl" style="display:${needsGuide(round) ? 'inline-flex' : 'none'};align-items:center;gap:6px;font-weight:normal;cursor:pointer">
             <input type="checkbox" id="arr-guide" ${ac.guide ? 'checked' : ''}> 案内係 確認済み
           </label>
         </div>
@@ -184,7 +203,7 @@ const Interviews = (() => {
         <textarea id="iv-notes" class="form-control">${Utils.esc(iv.notes || '')}</textarea>
       </div>`;
 
-    // ===== タイムピッカー初期化 =====
+    // ===== タイムピッカー =====
     let endPicker;
     const startPicker = Utils.buildTimePicker(
       document.getElementById('iv-start'), start,
@@ -204,10 +223,42 @@ const Interviews = (() => {
         document.getElementById('iv-round').value = r;
         const ng = needsGuide(r);
         document.getElementById('iv-guide-wrap').style.display  = ng ? '' : 'none';
-        document.getElementById('arr-guide-lbl').style.display  = ng ? '' : 'none';
+        document.getElementById('arr-guide-lbl').style.display  = ng ? 'inline-flex' : 'none';
         const currentIds = [...document.querySelectorAll('#iv-candidate-area .tag')].map(t => Number(t.dataset.id)).filter(Boolean);
         buildCandidateSelector('iv-candidate-area', cands, currentIds, r);
       };
+    });
+
+    // ===== 面接形式ボタン =====
+    document.querySelectorAll('#iv-format-btns .toggle-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#iv-format-btns .toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('iv-format').value = btn.dataset.val;
+        const online = btn.dataset.val === 'オンライン';
+        document.getElementById('iv-location-wrap').style.display = online ? 'none' : '';
+        document.getElementById('iv-url-wrap').style.display      = online ? '' : 'none';
+      };
+    });
+
+    // ===== 面接場所チップ =====
+    document.querySelectorAll('#iv-room-chips .chip-toggle').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#iv-room-chips .chip-toggle').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const customWrap = document.getElementById('iv-location-custom-wrap');
+        if (btn.dataset.val === '__other__') {
+          if (customWrap) customWrap.style.display = '';
+          const custom = document.getElementById('iv-location-custom');
+          if (custom) { custom.focus(); document.getElementById('iv-location').value = custom.value; }
+        } else {
+          if (customWrap) customWrap.style.display = 'none';
+          document.getElementById('iv-location').value = btn.dataset.val;
+        }
+      };
+    });
+    document.getElementById('iv-location-custom')?.addEventListener('input', () => {
+      document.getElementById('iv-location').value = document.getElementById('iv-location-custom').value.trim();
     });
 
     // ===== 結果ボタン =====
@@ -219,16 +270,6 @@ const Interviews = (() => {
       };
     });
 
-    // ===== 面接形式 =====
-    document.querySelectorAll('input[name="iv-format"]').forEach(r => {
-      r.addEventListener('change', () => {
-        const online = document.querySelector('input[name="iv-format"]:checked')?.value === 'オンライン';
-        document.getElementById('iv-location-wrap').style.display = online ? 'none' : '';
-        document.getElementById('iv-url-wrap').style.display      = online ? '' : 'none';
-      });
-    });
-
-    Masters.attachAutocomplete(document.getElementById('iv-location'), rooms);
     buildCandidateSelector('iv-candidate-area', cands, iv.candidateIds || [], round);
     ivSelector = Masters.buildInterviewerSelector('iv-interviewer-selector', iv.interviewerIds || []);
     buildGuideSelector('iv-guide-area', hrStaffs, iv.guideIds || []);
@@ -236,7 +277,7 @@ const Interviews = (() => {
     openBackdrop('modal-interview');
   }
 
-  // ===== 候補者セレクタ（インクリメンタルサーチ追加）=====
+  // ===== 候補者セレクタ（選考状況フィルタ + インクリメンタルサーチ）=====
   function buildCandidateSelector(containerId, cands, selectedIds, round) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -262,16 +303,24 @@ const Interviews = (() => {
         const c = cands.find(x => x.id === id);
         return c ? `<span class="tag" data-id="${id}">${Utils.esc(c.name)}<button class="tag-remove" data-id="${id}">×</button></span>` : '';
       }).join('');
-      const remaining = cands.filter(c => !selected.has(c.id));
 
       container.innerHTML = `
         <div class="cap-dots">${dots}</div>
         <div class="interviewer-tags">${tags}</div>
         ${!full
-          ? `<div style="position:relative;margin-top:6px;">
-               <input type="text" id="cand-search-input" class="form-control"
-                 placeholder="候補者名で検索して追加..." autocomplete="off">
-               <div id="cand-search-results" class="autocomplete-list" style="display:none;"></div>
+          ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+               <select id="cand-status-filter" class="form-control"
+                 style="flex:0 0 auto;width:150px;font-size:12px;padding:6px 28px 6px 8px;">
+                 <option value="">選考状況: すべて</option>
+                 ${(Candidates.SELECTION_STATUSES || []).map(s =>
+                   `<option value="${Utils.esc(s)}">${Utils.esc(s)}</option>`
+                 ).join('')}
+               </select>
+               <div style="position:relative;flex:1;min-width:120px;">
+                 <input type="text" id="cand-search-input" class="form-control"
+                   placeholder="名前で検索..." autocomplete="off">
+                 <div id="cand-search-results" class="autocomplete-list" style="display:none;"></div>
+               </div>
              </div>`
           : `<p style="font-size:12px;color:var(--danger);margin-top:6px;">定員に達しました</p>`
         }`;
@@ -279,19 +328,35 @@ const Interviews = (() => {
       container.querySelectorAll('.tag-remove').forEach(btn =>
         btn.onclick = () => { selected.delete(Number(btn.dataset.id)); render(); });
 
-      const searchInput = document.getElementById('cand-search-input');
-      const resultsList = document.getElementById('cand-search-results');
+      const searchInput  = document.getElementById('cand-search-input');
+      const statusFilter = document.getElementById('cand-status-filter');
+      const resultsList  = document.getElementById('cand-search-results');
+
       if (searchInput) {
-        searchInput.addEventListener('input', () => {
+        function getRemaining() {
+          const statusVal = statusFilter?.value || '';
+          return cands.filter(c => {
+            if (selected.has(c.id)) return false;
+            if (statusVal && c.selectionStatus !== statusVal) return false;
+            return true;
+          });
+        }
+
+        function showResults() {
+          const remaining = getRemaining();
           const q = searchInput.value.toLowerCase();
-          if (!q) { resultsList.style.display = 'none'; return; }
           const matches = remaining
-            .filter(c => `${c.name} ${c.selectionStatus || ''}`.toLowerCase().includes(q))
+            .filter(c => !q || `${c.name} ${c.selectionStatus || ''}`.toLowerCase().includes(q))
             .slice(0, 15);
-          if (!matches.length) { resultsList.style.display = 'none'; return; }
-          resultsList.innerHTML = matches.map(c =>
-            `<div class="autocomplete-item" data-id="${c.id}">${Utils.esc(c.name)}（${Utils.esc(c.selectionStatus || '')}）</div>`
-          ).join('');
+          if (!matches.length && !statusFilter?.value && !q) {
+            resultsList.style.display = 'none';
+            return;
+          }
+          resultsList.innerHTML = matches.length
+            ? matches.map(c =>
+                `<div class="autocomplete-item" data-id="${c.id}">${Utils.esc(c.name)}（${Utils.esc(c.selectionStatus || '')}）</div>`
+              ).join('')
+            : `<div style="padding:8px 12px;font-size:13px;color:var(--gray-400);">該当なし</div>`;
           resultsList.style.display = 'block';
           resultsList.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('mousedown', e => {
@@ -300,7 +365,10 @@ const Interviews = (() => {
               render();
             });
           });
-        });
+        }
+
+        searchInput.addEventListener('input', showResults);
+        statusFilter?.addEventListener('change', () => { searchInput.value = ''; showResults(); });
         searchInput.addEventListener('blur', () =>
           setTimeout(() => { if (resultsList) resultsList.style.display = 'none'; }, 150));
       }
@@ -361,7 +429,7 @@ const Interviews = (() => {
       candidateIds:   candIds,
       interviewerIds: ivIds,
       guideIds,
-      format:         document.querySelector('input[name="iv-format"]:checked')?.value || 'リアル',
+      format:         document.getElementById('iv-format').value || 'リアル',
       location:       document.getElementById('iv-location').value.trim(),
       onlineUrl:      document.getElementById('iv-online-url').value.trim(),
       result:         document.getElementById('iv-result').value,

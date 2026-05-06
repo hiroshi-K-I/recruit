@@ -1023,3 +1023,63 @@ kbd {
 }
 .iv-chip:hover { border-color: var(--primary); color: var(--primary); }
 .iv-chip.selected { background: #DBEAFE; border-color: #3B82F6; color: #1E40AF; font-weight: 600; }
+
+/* ===== データ管理ドロップダウンメニュー ===== */
+.data-menu-wrap { position: relative; }
+.data-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 600;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.18);
+  min-width: 210px;
+  padding: 6px 0;
+  display: none;
+}
+.data-menu-panel.open { display: block; }
+.data-menu-section { padding: 2px 0; }
+.data-menu-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  padding: 4px 14px 2px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.data-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  font-size: 13px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-700);
+  transition: background .1s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.data-menu-item:hover { background: var(--gray-50); color: var(--gray-900); }
+.data-menu-item-danger { color: var(--danger) !important; }
+.data-menu-item-danger:hover { background: #FEE2E2 !important; }
+.data-menu-divider { height: 1px; background: var(--gray-100); margin: 4px 0; }
+
+/* ===== マスタ設定 I/O バー ===== */
+.masters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.masters-header .masters-section-title { margin-bottom: 0; }
+.masters-io-bar { display: flex; gap: 6px; align-items: center; }
+.masters-import-label {
+  display: inline-flex !important;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 !important;
+}

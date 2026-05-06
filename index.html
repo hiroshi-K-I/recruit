@@ -19,12 +19,31 @@
       <button class="nav-tab"        data-view="masters">マスタ設定</button>
     </nav>
     <div class="header-right">
-      <span id="current-username" style="font-size:12px;color:rgba(255,255,255,.6);cursor:pointer" id="btn-open-settings" title="設定">👤 未設定</span>
+      <span id="current-username" style="font-size:12px;color:rgba(255,255,255,.6);cursor:pointer" title="設定">👤 未設定</span>
       <button class="btn btn-ghost btn-sm" id="btn-open-settings" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)">⚙ 設定</button>
-      <button class="btn btn-ghost btn-sm" id="btn-sync-export"  style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)">📤 同期エクスポート</button>
-      <button class="btn btn-ghost btn-sm" id="btn-sync-import"  style="color:#fff;border-color:rgba(255,255,255,.4)">📥 同期インポート</button>
-      <button class="btn btn-ghost btn-sm" id="btn-import-csv"   style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.25)">↑ CSVインポート</button>
-      <button class="btn btn-ghost btn-sm" id="btn-reset-all"    style="color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.2)">🗑 全削除</button>
+      <div class="data-menu-wrap" id="data-menu-wrap">
+        <button class="btn btn-ghost btn-sm" id="btn-data-menu" style="color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.35)">📊 データ管理 ▾</button>
+        <div class="data-menu-panel" id="data-menu-panel">
+          <div class="data-menu-section">
+            <div class="data-menu-section-title">同期（JSON）</div>
+            <button class="data-menu-item" id="btn-sync-export">📤 エクスポート</button>
+            <button class="data-menu-item" id="btn-sync-import">📥 インポート</button>
+          </div>
+          <div class="data-menu-divider"></div>
+          <div class="data-menu-section">
+            <div class="data-menu-section-title">候補者データ（CSV）</div>
+            <button class="data-menu-item" id="btn-export-candidates">↓ 出力</button>
+            <button class="data-menu-item" id="btn-import-csv">↑ インポート</button>
+          </div>
+          <div class="data-menu-divider"></div>
+          <div class="data-menu-section">
+            <div class="data-menu-section-title">面接データ（CSV）</div>
+            <button class="data-menu-item" id="btn-export-interviews">↓ 出力</button>
+          </div>
+          <div class="data-menu-divider"></div>
+          <button class="data-menu-item data-menu-item-danger" id="btn-reset-all">🗑 全データ削除</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -62,7 +81,6 @@
       <span id="cand-count" style="font-size:12px;color:var(--gray-500);margin-left:4px;"></span>
       <div class="toolbar-spacer"></div>
       <button class="btn btn-primary" id="btn-add-candidate">＋ 候補者追加</button>
-      <button class="btn btn-secondary btn-sm" id="btn-export-candidates">↓ CSV出力</button>
     </div>
     <div class="table-wrap">
       <table id="candidates-table">
@@ -109,7 +127,6 @@
         <button class="cal-view-btn"        data-calview="arrangement">手配</button>
       </div>
       <button class="btn btn-primary btn-sm" id="btn-add-interview">＋ 面接枠追加</button>
-      <button class="btn btn-secondary btn-sm" id="btn-export-interviews">↓ CSV出力</button>
     </div>
     <div id="calendar-container" style="flex:1;overflow:hidden;display:flex;flex-direction:column;"></div>
   </section>

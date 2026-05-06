@@ -50,6 +50,17 @@
   document.getElementById('btn-save-interview')?.addEventListener('click', () => Interviews.save());
   document.getElementById('btn-delete-interview')?.addEventListener('click', () => Interviews.del());
 
+  // ===== データ管理メニュー =====
+  const dataMenuPanel = document.getElementById('data-menu-panel');
+  document.getElementById('btn-data-menu')?.addEventListener('click', e => {
+    e.stopPropagation();
+    dataMenuPanel?.classList.toggle('open');
+  });
+  document.addEventListener('click', () => dataMenuPanel?.classList.remove('open'));
+  document.querySelectorAll('#data-menu-panel .data-menu-item').forEach(item => {
+    item.addEventListener('click', () => dataMenuPanel?.classList.remove('open'));
+  });
+
   // ===== 設定 =====
   document.getElementById('btn-open-settings')?.addEventListener('click', () => Settings.renderModal());
   document.getElementById('btn-save-settings')?.addEventListener('click', () => {
