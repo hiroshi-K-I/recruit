@@ -1,6 +1,6 @@
 const Interviews = (() => {
   const RESULTS = ['未実施','合格','不合格','辞退','保留'];
-  const ROUNDS  = ['1次面接','2次面接','役員面接','最終面接','その他'];
+  const ROUNDS  = ['1次面接','2次面接','役員面接','その他'];
   const RESULT_CSS = { '未実施': 'neutral', '合格': 'pass', '不合格': 'fail', '辞退': 'cancel', '保留': 'hold' };
 
   // 面接回次 → 自動絞り込む選考状況
@@ -8,7 +8,6 @@ const Interviews = (() => {
     '1次面接': '1次面接待ち',
     '2次面接': '2次面接待ち',
     '役員面接': '最終面接待ち',
-    '最終面接': '最終面接待ち',
   };
 
   function maxByRound(round) {
