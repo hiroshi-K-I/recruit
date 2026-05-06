@@ -525,6 +525,14 @@ kbd {
   box-shadow: 0 1px 0 var(--gray-300);
 }
 
+.btn-kbd {
+  display: inline-block; padding: 1px 5px; border-radius: 3px;
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
+  font-size: 11px; font-family: monospace; color: inherit;
+  box-shadow: none; margin-left: 4px; vertical-align: middle;
+  line-height: 1.4;
+}
+
 /* ===== 同期・競合解決UI ===== */
 .sync-meta { font-size:13px; color:var(--gray-600); margin-bottom:12px; padding:8px 12px; background:var(--gray-50); border-radius:var(--radius); }
 .sync-summary-table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:4px; }

@@ -3,6 +3,14 @@ const Interviews = (() => {
   const ROUNDS  = ['1次面接','2次面接','役員面接','最終面接','その他'];
   const RESULT_CSS = { '未実施': 'neutral', '合格': 'pass', '不合格': 'fail', '辞退': 'cancel', '保留': 'hold' };
 
+  // 面接回次 → 自動絞り込む選考状況
+  const ROUND_STATUS = {
+    '1次面接': '1次面接待ち',
+    '2次面接': '2次面接待ち',
+    '役員面接': '最終面接待ち',
+    '最終面接': '最終面接待ち',
+  };
+
   function maxByRound(round) {
     if (round === '1次面接') return 4;
     return 2;
@@ -281,7 +289,8 @@ const Interviews = (() => {
   function buildCandidateSelector(containerId, cands, selectedIds, round) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    let selected = new Set(selectedIds);
+    let selected  = new Set(selectedIds);
+    let statusVal = ROUND_STATUS[round] || '';  // 面接回次から自動セット
 
     function getMax() {
       return maxByRound(document.getElementById('iv-round')?.value || round);
@@ -313,7 +322,7 @@ const Interviews = (() => {
                  style="flex:0 0 auto;width:150px;font-size:12px;padding:6px 28px 6px 8px;">
                  <option value="">選考状況: すべて</option>
                  ${(Candidates.SELECTION_STATUSES || []).map(s =>
-                   `<option value="${Utils.esc(s)}">${Utils.esc(s)}</option>`
+                   `<option value="${Utils.esc(s)}"${s === statusVal ? ' selected' : ''}>${Utils.esc(s)}</option>`
                  ).join('')}
                </select>
                <div style="position:relative;flex:1;min-width:120px;">
@@ -334,7 +343,6 @@ const Interviews = (() => {
 
       if (searchInput) {
         function getRemaining() {
-          const statusVal = statusFilter?.value || '';
           return cands.filter(c => {
             if (selected.has(c.id)) return false;
             if (statusVal && c.selectionStatus !== statusVal) return false;
@@ -348,7 +356,7 @@ const Interviews = (() => {
           const matches = remaining
             .filter(c => !q || `${c.name} ${c.selectionStatus || ''}`.toLowerCase().includes(q))
             .slice(0, 15);
-          if (!matches.length && !statusFilter?.value && !q) {
+          if (!matches.length && !statusVal && !q) {
             resultsList.style.display = 'none';
             return;
           }
@@ -368,9 +376,16 @@ const Interviews = (() => {
         }
 
         searchInput.addEventListener('input', showResults);
-        statusFilter?.addEventListener('change', () => { searchInput.value = ''; showResults(); });
+        statusFilter?.addEventListener('change', () => {
+          statusVal = statusFilter.value;
+          searchInput.value = '';
+          showResults();
+        });
         searchInput.addEventListener('blur', () =>
           setTimeout(() => { if (resultsList) resultsList.style.display = 'none'; }, 150));
+
+        // 面接回次に対応する選考状況で初期表示を自動絞り込み
+        if (statusVal) showResults();
       }
     }
 

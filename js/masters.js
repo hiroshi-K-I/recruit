@@ -135,7 +135,7 @@ const Masters = (() => {
     let html = `<div class="masters-header">
       <h2 class="masters-section-title">${def.label}マスタ</h2>
       <div class="masters-io-bar">
-        <button class="btn btn-ghost btn-sm" id="btn-master-export-${key}">↓ CSV出力</button>
+        <button class="btn btn-ghost btn-sm" id="btn-master-export-${key}">↓ CSVエクスポート</button>
         <label class="masters-import-label btn btn-ghost btn-sm">
           ↑ CSVインポート
           <input type="file" accept=".csv" id="inp-master-import-${key}" style="display:none">
