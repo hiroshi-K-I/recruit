@@ -236,15 +236,20 @@ const Interviews = (() => {
     // ===== 回次ボタン =====
     document.querySelectorAll('#iv-round-btns .toggle-btn').forEach(btn => {
       btn.onclick = () => {
+        const prevRound = document.getElementById('iv-round').value;
+        const r = btn.dataset.val;
+        if (r === prevRound) return;
+
+        const currentIds = [...document.querySelectorAll('#iv-candidate-area .tag')].map(t => Number(t.dataset.id)).filter(Boolean);
+        if (currentIds.length > 0 && !Utils.confirm('面接回次を変更すると、選択済みの候補者がリセットされます。続行しますか？')) return;
+
         document.querySelectorAll('#iv-round-btns .toggle-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const r = btn.dataset.val;
         document.getElementById('iv-round').value = r;
         const ng = needsGuide(r);
         document.getElementById('iv-guide-wrap').style.display  = ng ? '' : 'none';
         document.getElementById('arr-guide-lbl').style.display  = ng ? 'inline-flex' : 'none';
-        const currentIds = [...document.querySelectorAll('#iv-candidate-area .tag')].map(t => Number(t.dataset.id)).filter(Boolean);
-        buildCandidateSelector('iv-candidate-area', cands, currentIds, r);
+        buildCandidateSelector('iv-candidate-area', cands, [], r);
       };
     });
 
@@ -328,14 +333,19 @@ const Interviews = (() => {
         <div class="cap-dots">${dots}</div>
         <div class="interviewer-tags">${tags}</div>
         ${!full
-          ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-               <select id="cand-status-filter" class="form-control"
-                 style="flex:0 0 auto;width:150px;font-size:12px;padding:6px 28px 6px 8px;">
-                 <option value="">選考状況: すべて</option>
-                 ${(Candidates.SELECTION_STATUSES || []).map(s =>
-                   `<option value="${Utils.esc(s)}"${s === statusVal ? ' selected' : ''}>${Utils.esc(s)}</option>`
-                 ).join('')}
-               </select>
+          ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center;">
+               ${statusVal
+                 ? `<span style="flex:0 0 auto;font-size:12px;color:var(--gray-600);padding:4px 10px;
+                      background:var(--gray-100);border:1px solid var(--gray-200);border-radius:var(--radius);white-space:nowrap;">
+                      🔒 ${Utils.esc(statusVal)}</span>`
+                 : `<select id="cand-status-filter" class="form-control"
+                      style="flex:0 0 auto;width:150px;font-size:12px;padding:6px 28px 6px 8px;">
+                      <option value="">選考状況: すべて</option>
+                      ${(Candidates.SELECTION_STATUSES || []).map(s =>
+                        `<option value="${Utils.esc(s)}"${s === statusVal ? ' selected' : ''}>${Utils.esc(s)}</option>`
+                      ).join('')}
+                    </select>`
+               }
                <div style="position:relative;flex:1;min-width:120px;">
                  <input type="text" id="cand-search-input" class="form-control"
                    placeholder="名前で検索..." autocomplete="off">
@@ -446,6 +456,20 @@ const Interviews = (() => {
     const ivIds    = ivSelector ? ivSelector.getSelected() : [];
     const guideIds = [...document.querySelectorAll('#iv-guide-area .chip-toggle.selected')].map(t => Number(t.dataset.id)).filter(Boolean);
     const round    = document.getElementById('iv-round').value;
+
+    // 面接回次と候補者の選考状況が一致しているか検証
+    const expectedStatus = ROUND_STATUS[round];
+    if (expectedStatus && candIds.length > 0) {
+      const allCands = Candidates.getAll();
+      const mismatched = candIds
+        .map(id => allCands.find(c => c.id === id))
+        .filter(c => c && c.selectionStatus !== expectedStatus);
+      if (mismatched.length > 0) {
+        const names = mismatched.map(c => c.name).join('、');
+        Utils.toast(`${names} の選考状況が「${expectedStatus}」ではありません`, 'error');
+        return;
+      }
+    }
 
     const data = {
       date,
