@@ -5,6 +5,8 @@ const Candidates = (() => {
     '最終面接待ち','最終面接済','内定','内定承諾','辞退','不採用',
   ];
 
+  const JOB_TYPES = ['SE', 'IE', '営業', 'その他'];
+
   const STATUS_COLOR = {
     '書類選考中':  'badge-gray',
     '1次面接待ち': 'badge-blue',
@@ -119,17 +121,10 @@ const Candidates = (() => {
     deleteBtn.style.display = isNew ? 'none' : '';
 
     const universities = Masters.get('universities').map(u => u.name);
-    const jobTypes     = Masters.get('jobTypes').map(j => j.name);
     const locations    = Masters.get('locations').map(l => l.name);
     const hrStaffs     = Masters.get('hrStaff').map(s => s.name);
 
-    // 希望勤務地チェックボックス
     const prefLocs = (c.preferredLocations || []);
-    const locChecks = locations.map(l =>
-      `<label class="check-group" style="margin:0">
-        <input type="checkbox" name="pref-loc" value="${Utils.esc(l)}" ${prefLocs.includes(l) ? 'checked' : ''}> ${Utils.esc(l)}
-      </label>`
-    ).join('');
 
     // 志望度スター
     const stars = [5,4,3,2,1].map(n =>
@@ -138,6 +133,7 @@ const Candidates = (() => {
     ).join('');
 
     document.getElementById('modal-cand-body').innerHTML = `
+      <!-- 氏名 + 採用種別 -->
       <div class="form-row">
         <div class="form-group" style="flex:2">
           <label class="required">氏名</label>
@@ -154,45 +150,72 @@ const Candidates = (() => {
           <input type="hidden" id="f-recruit-type" value="${Utils.esc(c.recruitType || '')}">
         </div>
       </div>
+
+      <!-- 大学（チップフィルタ） -->
+      <div class="form-group">
+        <label>大学</label>
+        <input type="text" id="f-university" class="form-control"
+          value="${Utils.esc(c.university || '')}"
+          placeholder="${universities.length ? '絞り込み入力、または直接入力...' : '大学名を入力'}">
+        ${universities.length
+          ? `<div class="chip-toggle-group" id="univ-chip-list"
+               style="max-height:80px;overflow-y:auto;margin-top:6px;"></div>`
+          : ''}
+      </div>
+
+      <!-- 文理 + 職種 -->
       <div class="form-row">
-        <div class="form-group">
-          <label>大学</label>
-          <input type="text" id="f-university" class="form-control" value="${Utils.esc(c.university || '')}" placeholder="大学名">
-        </div>
         <div class="form-group">
           <label>文理</label>
-          <div class="radio-group">
-            ${['文系','理系','その他'].map(v =>
-              `<label><input type="radio" name="faculty" value="${v}" ${c.facultyType === v ? 'checked' : ''}> ${v}</label>`
+          <div class="toggle-btn-group" id="f-faculty-btns">
+            ${['', '文系', '理系', 'その他'].map(v =>
+              `<button class="toggle-btn${(c.facultyType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
             ).join('')}
           </div>
+          <input type="hidden" id="f-faculty" value="${Utils.esc(c.facultyType || '')}">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label>職種</label>
-          <input type="text" id="f-jobtype" class="form-control" value="${Utils.esc(c.jobType || '')}" placeholder="職種">
-        </div>
-        <div class="form-group">
-          <label>担当者</label>
-          ${hrStaffs.length
-            ? `<div class="chip-toggle-group" id="f-hrstaff-chips">
-                 ${hrStaffs.map(s =>
-                   `<button class="chip-toggle${c.hrStaff === s ? ' selected' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
-                 ).join('')}
-               </div>
-               <input type="hidden" id="f-hrstaff" value="${Utils.esc(c.hrStaff || '')}">`
-            : `<select id="f-hrstaff" class="form-control">
-                 <option value="">--</option>
-                 ${hrStaffs.map(s => `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`).join('')}
-               </select>`
-          }
+          <div class="toggle-btn-group" id="f-jobtype-btns">
+            ${JOB_TYPES.map(v =>
+              `<button class="toggle-btn${c.jobType === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${Utils.esc(v)}</button>`
+            ).join('')}
+          </div>
+          <input type="hidden" id="f-jobtype" value="${Utils.esc(c.jobType || '')}">
         </div>
       </div>
+
+      <!-- 担当者 -->
+      <div class="form-group">
+        <label>担当者</label>
+        ${hrStaffs.length
+          ? `<div class="chip-toggle-group" id="f-hrstaff-chips">
+               ${hrStaffs.map(s =>
+                 `<button class="chip-toggle${c.hrStaff === s ? ' selected' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
+               ).join('')}
+             </div>
+             <input type="hidden" id="f-hrstaff" value="${Utils.esc(c.hrStaff || '')}">`
+          : `<select id="f-hrstaff" class="form-control">
+               <option value="">--</option>
+               ${hrStaffs.map(s => `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`).join('')}
+             </select>`
+        }
+      </div>
+
+      <!-- 希望勤務地 -->
       <div class="form-group">
         <label>希望勤務地</label>
-        <div class="check-group">${locChecks || '<span style="color:var(--gray-400);font-size:12px;">（勤務地マスタ未登録）</span>'}</div>
+        ${locations.length
+          ? `<div class="chip-toggle-group" id="f-loc-chips">
+               ${locations.map(l =>
+                 `<button class="chip-toggle${prefLocs.includes(l) ? ' selected' : ''}" data-val="${Utils.esc(l)}">${Utils.esc(l)}</button>`
+               ).join('')}
+             </div>`
+          : `<span style="font-size:12px;color:var(--gray-400);">（勤務地マスタ未登録）</span>`
+        }
       </div>
+
+      <!-- 選考状況 -->
       <div class="form-group">
         <label>選考状況</label>
         <div class="status-grid">
@@ -202,14 +225,14 @@ const Candidates = (() => {
         </div>
         <input type="hidden" id="f-status" value="${Utils.esc(c.selectionStatus || '')}">
       </div>
+
+      <!-- 志望度 -->
       <div class="form-group">
         <label>志望度</label>
         <div class="star-rating">${stars}</div>
       </div>
-      <div class="form-group">
-        <label>申送り</label>
-        <textarea id="f-notes" class="form-control">${Utils.esc(c.notes || '')}</textarea>
-      </div>
+
+      <!-- 特記事項 -->
       <div class="form-group">
         <label>特記事項</label>
         <textarea id="f-remarks" class="form-control">${Utils.esc(c.remarks || '')}</textarea>
@@ -224,12 +247,21 @@ const Candidates = (() => {
       };
     });
 
-    // ===== 選考状況チップ =====
-    document.querySelectorAll('.status-grid .status-chip').forEach(chip => {
-      chip.onclick = () => {
-        document.querySelectorAll('.status-grid .status-chip').forEach(ch => ch.classList.remove('active'));
-        chip.classList.add('active');
-        document.getElementById('f-status').value = chip.dataset.val;
+    // ===== 文理ボタン =====
+    document.querySelectorAll('#f-faculty-btns .toggle-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#f-faculty-btns .toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('f-faculty').value = btn.dataset.val;
+      };
+    });
+
+    // ===== 職種ボタン =====
+    document.querySelectorAll('#f-jobtype-btns .toggle-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#f-jobtype-btns .toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('f-jobtype').value = btn.dataset.val;
       };
     });
 
@@ -247,9 +279,53 @@ const Candidates = (() => {
       };
     });
 
-    // オートコンプリート
-    Masters.attachAutocomplete(document.getElementById('f-university'), universities);
-    Masters.attachAutocomplete(document.getElementById('f-jobtype'),    jobTypes);
+    // ===== 希望勤務地チップ（複数選択）=====
+    document.querySelectorAll('#f-loc-chips .chip-toggle').forEach(btn => {
+      btn.onclick = () => {
+        btn.classList.toggle('selected');
+      };
+    });
+
+    // ===== 選考状況チップ =====
+    document.querySelectorAll('.status-grid .status-chip').forEach(chip => {
+      chip.onclick = () => {
+        document.querySelectorAll('.status-grid .status-chip').forEach(ch => ch.classList.remove('active'));
+        chip.classList.add('active');
+        document.getElementById('f-status').value = chip.dataset.val;
+      };
+    });
+
+    // ===== 大学チップフィルタ =====
+    const univInput = document.getElementById('f-university');
+    const univChipList = document.getElementById('univ-chip-list');
+    if (univInput && univChipList) {
+      let selectedUniv = c.university || '';
+
+      function renderUnivChips() {
+        const q = univInput.value.toLowerCase();
+        const shown = universities
+          .filter(u => !q || u.toLowerCase().includes(q))
+          .slice(0, 40);
+        univChipList.innerHTML = shown.map(u =>
+          `<button class="chip-toggle${selectedUniv === u ? ' selected' : ''}" data-val="${Utils.esc(u)}">${Utils.esc(u)}</button>`
+        ).join('') || (q ? '<span style="font-size:12px;color:var(--gray-400);">該当なし（直接入力可）</span>' : '');
+
+        univChipList.querySelectorAll('.chip-toggle').forEach(btn => {
+          btn.addEventListener('mousedown', e => {
+            e.preventDefault();
+            selectedUniv = btn.dataset.val;
+            univInput.value = selectedUniv;
+            renderUnivChips();
+          });
+        });
+      }
+
+      renderUnivChips();
+      univInput.addEventListener('input', () => {
+        selectedUniv = '';
+        renderUnivChips();
+      });
+    }
 
     openBackdrop('modal-candidate');
   }
@@ -265,21 +341,19 @@ const Candidates = (() => {
     document.getElementById('f-name').classList.remove('error');
     document.getElementById('err-name').textContent = '';
 
-    const prefLocs = [...document.querySelectorAll('input[name="pref-loc"]:checked')].map(el => el.value);
-    const faculty  = document.querySelector('input[name="faculty"]:checked')?.value || '';
+    const prefLocs = [...document.querySelectorAll('#f-loc-chips .chip-toggle.selected')].map(btn => btn.dataset.val);
     const motiv    = Number(document.querySelector('input[name="motivation"]:checked')?.value || 0);
 
     const data = {
       name,
       recruitType:        document.getElementById('f-recruit-type').value,
       university:         document.getElementById('f-university').value.trim(),
-      facultyType:        faculty,
-      jobType:            document.getElementById('f-jobtype').value.trim(),
+      facultyType:        document.getElementById('f-faculty').value,
+      jobType:            document.getElementById('f-jobtype').value,
       hrStaff:            document.getElementById('f-hrstaff').value,
       preferredLocations: prefLocs,
       selectionStatus:    document.getElementById('f-status').value,
       motivation:         motiv,
-      notes:              document.getElementById('f-notes').value.trim(),
       remarks:            document.getElementById('f-remarks').value.trim(),
     };
 

@@ -156,18 +156,16 @@ const Utils = (() => {
     }, 2500);
   }
 
-  // タイムピッカー（クロック型グリッドUI）
-  // inputEl: readonly text input, initialValue: "HH:MM", onChange(val): callback
+  // タイムピッカー（クロック型グリッドUI、キーボード入力対応）
+  // inputEl: text input, initialValue: "HH:MM", onChange(val): callback
   function buildTimePicker(inputEl, initialValue, onChange, opts = {}) {
-    const startH = opts.startHour ?? 7;
-    const endH   = opts.endHour   ?? 22;
+    const startH = opts.startHour ?? 9;
+    const endH   = opts.endHour   ?? 16;
 
     const wrap = document.createElement('div');
     wrap.className = 'time-picker-wrap';
     inputEl.parentNode.insertBefore(wrap, inputEl);
     wrap.appendChild(inputEl);
-    inputEl.readOnly = true;
-    inputEl.classList.add('time-picker-input');
     inputEl.value = initialValue;
 
     let sh = parseInt(initialValue.split(':')[0], 10);
@@ -180,6 +178,26 @@ const Utils = (() => {
 
     function pad(n) { return String(n).padStart(2, '0'); }
     function fmt()  { return `${pad(sh)}:${pad(sm)}`; }
+
+    // "9", "9:30", "930", "1030", "10:30" などを [h, m] に変換
+    function parseTimeStr(str) {
+      const s = String(str || '').trim().replace(/[^0-9:]/g, '');
+      if (!s) return null;
+      let h, m;
+      if (s.includes(':')) {
+        const parts = s.split(':');
+        h = parseInt(parts[0], 10);
+        m = parseInt(parts[1] || '0', 10);
+      } else if (s.length <= 2) {
+        h = parseInt(s, 10); m = 0;
+      } else if (s.length === 3) {
+        h = parseInt(s[0], 10); m = parseInt(s.slice(1), 10);
+      } else {
+        h = parseInt(s.slice(0, 2), 10); m = parseInt(s.slice(2, 4), 10);
+      }
+      if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+      return [h, m];
+    }
 
     function draw() {
       const hours = [];
@@ -221,14 +239,45 @@ const Utils = (() => {
 
     draw();
 
+    // パネルクリック時にinputのfocusを奪わない
+    panel.addEventListener('mousedown', e => e.preventDefault());
+
+    // クリックでパネル開閉
     inputEl.addEventListener('click', e => {
       e.stopPropagation();
-      sh = parseInt(inputEl.value.split(':')[0], 10);
-      sm = parseInt(inputEl.value.split(':')[1], 10);
+      const parsed = parseTimeStr(inputEl.value);
+      if (parsed) { sh = parsed[0]; sm = parsed[1]; }
       draw();
       const isOpen = panel.style.display !== 'none';
       document.querySelectorAll('.time-picker-panel').forEach(p => { p.style.display = 'none'; });
       panel.style.display = isOpen ? 'none' : 'block';
+    });
+
+    // キーボード入力中にピッカーパネルをリアルタイム更新
+    inputEl.addEventListener('input', () => {
+      const parsed = parseTimeStr(inputEl.value);
+      if (parsed) { sh = parsed[0]; sm = parsed[1]; draw(); }
+    });
+
+    // フォーカスを外れたとき: 入力値を正規化してHH:MM形式に統一
+    inputEl.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (!wrap.contains(document.activeElement)) panel.style.display = 'none';
+        const parsed = parseTimeStr(inputEl.value);
+        if (parsed) {
+          sh = parsed[0];
+          // 最近傍の15分刻みにスナップ
+          sm = [0, 15, 30, 45].reduce((p, c) => Math.abs(c - parsed[1]) < Math.abs(p - parsed[1]) ? c : p);
+          const val = fmt();
+          if (inputEl.value !== val) {
+            inputEl.value = val;
+            draw();
+            onChange && onChange(val);
+          }
+        } else if (inputEl.value !== fmt()) {
+          inputEl.value = fmt(); // 無効な入力はリセット
+        }
+      }, 150);
     });
 
     document.addEventListener('mousedown', e => {
