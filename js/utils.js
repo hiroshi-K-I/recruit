@@ -156,10 +156,100 @@ const Utils = (() => {
     }, 2500);
   }
 
+  // タイムピッカー（クロック型グリッドUI）
+  // inputEl: readonly text input, initialValue: "HH:MM", onChange(val): callback
+  function buildTimePicker(inputEl, initialValue, onChange, opts = {}) {
+    const startH = opts.startHour ?? 7;
+    const endH   = opts.endHour   ?? 22;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'time-picker-wrap';
+    inputEl.parentNode.insertBefore(wrap, inputEl);
+    wrap.appendChild(inputEl);
+    inputEl.readOnly = true;
+    inputEl.classList.add('time-picker-input');
+    inputEl.value = initialValue;
+
+    let sh = parseInt(initialValue.split(':')[0], 10);
+    let sm = parseInt(initialValue.split(':')[1], 10);
+
+    const panel = document.createElement('div');
+    panel.className = 'time-picker-panel';
+    panel.style.display = 'none';
+    wrap.appendChild(panel);
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function fmt()  { return `${pad(sh)}:${pad(sm)}`; }
+
+    function draw() {
+      const hours = [];
+      for (let h = startH; h <= endH; h++) hours.push(h);
+      panel.innerHTML = `
+        <div class="tp-current">${fmt()}</div>
+        <div class="tp-hours">${
+          hours.map(h =>
+            `<button class="tp-btn${h === sh ? ' h-sel' : ''}" data-h="${h}">${h}時</button>`
+          ).join('')
+        }</div>
+        <hr class="tp-divider">
+        <div class="tp-mins">${
+          [0, 15, 30, 45].map(m =>
+            `<button class="tp-btn${m === sm ? ' m-sel' : ''}" data-m="${m}">:${pad(m)}</button>`
+          ).join('')
+        }</div>`;
+
+      panel.querySelectorAll('[data-h]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          sh = +btn.dataset.h;
+          draw();
+        });
+      });
+
+      panel.querySelectorAll('[data-m]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          sm = +btn.dataset.m;
+          const val = fmt();
+          inputEl.value = val;
+          panel.style.display = 'none';
+          draw();
+          onChange && onChange(val);
+        });
+      });
+    }
+
+    draw();
+
+    inputEl.addEventListener('click', e => {
+      e.stopPropagation();
+      sh = parseInt(inputEl.value.split(':')[0], 10);
+      sm = parseInt(inputEl.value.split(':')[1], 10);
+      draw();
+      const isOpen = panel.style.display !== 'none';
+      document.querySelectorAll('.time-picker-panel').forEach(p => { p.style.display = 'none'; });
+      panel.style.display = isOpen ? 'none' : 'block';
+    });
+
+    document.addEventListener('mousedown', e => {
+      if (!wrap.contains(e.target)) panel.style.display = 'none';
+    });
+
+    return {
+      getValue: () => inputEl.value,
+      setValue: v => {
+        inputEl.value = v;
+        sh = parseInt(v.split(':')[0], 10);
+        sm = parseInt(v.split(':')[1], 10);
+        draw();
+      },
+    };
+  }
+
   return {
     timeOptions, timeToMinutes, minutesToTime,
     parseDate, formatDate, formatDateJa, formatDateShort, formatDateTime, nowISO,
-    fillTimeSelect, confirm, esc, resultColorClass, motivationLabel,
+    fillTimeSelect, buildTimePicker, confirm, esc, resultColorClass, motivationLabel,
     csvCell, parseCSVLine, parseCSV, toast,
   };
 })();

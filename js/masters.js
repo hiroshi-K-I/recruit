@@ -205,28 +205,28 @@ const Masters = (() => {
     Utils.toast(`${def.label}を削除しました`, 'info');
   }
 
-  // ===== 面接官二段階セレクタ =====
+  // ===== 面接官セレクタ（横タブ + チップ形式）=====
   function buildInterviewerSelector(containerId, selectedIds = []) {
-    const container  = document.getElementById(containerId);
+    const container    = document.getElementById(containerId);
     const interviewers = get('interviewers');
-    const divisions  = [...new Set(interviewers.map(i => i.division).filter(Boolean))].sort();
+    const divisions    = [...new Set(interviewers.map(i => i.division).filter(Boolean))].sort();
 
     let activeDivision = divisions[0] || '';
     let selected = new Set(selectedIds);
 
     function render() {
-      const divItems = divisions.map(d =>
-        `<div class="division-item ${d === activeDivision ? 'active' : ''}" data-div="${Utils.esc(d)}">${Utils.esc(d)}</div>`
+      const divTabs = divisions.map(d =>
+        `<button class="div-tab${d === activeDivision ? ' active' : ''}" data-div="${Utils.esc(d)}">${Utils.esc(d)}</button>`
       ).join('');
 
       const inDiv = interviewers.filter(i => i.division === activeDivision);
-      const ivItems = inDiv.length
-        ? inDiv.map(i => `
-          <label class="interviewer-item">
-            <input type="checkbox" value="${i.id}" ${selected.has(i.id) ? 'checked' : ''}>
-            ${Utils.esc(i.name)}${i.title ? `（${Utils.esc(i.title)}）` : ''}
-          </label>`).join('')
-        : `<div class="interviewer-empty">この本部に面接官が登録されていません</div>`;
+      const ivChips = inDiv.length
+        ? inDiv.map(i =>
+            `<button class="iv-chip${selected.has(i.id) ? ' selected' : ''}" data-id="${i.id}">
+              ${Utils.esc(i.name)}${i.title ? `<small style="opacity:.65;font-size:10px"> ${Utils.esc(i.title)}</small>` : ''}
+            </button>`
+          ).join('')
+        : `<span class="interviewer-empty" style="font-size:12px;color:var(--gray-400);padding:4px;">この本部に面接官が登録されていません</span>`;
 
       const tags = [...selected].map(id => {
         const iv = interviewers.find(x => x.id === id);
@@ -235,23 +235,24 @@ const Masters = (() => {
 
       container.innerHTML = `
         <div class="interviewer-selector">
-          <div class="interviewer-tags" id="iv-tags-${containerId}">${tags || ''}</div>
-          <div class="selector-panels">
-            <div class="division-list">${divItems || '<div class="interviewer-empty">本部が未登録です</div>'}</div>
-            <div class="interviewer-list">${ivItems}</div>
-          </div>
+          <div class="interviewer-tags">${tags || ''}</div>
+          ${divisions.length
+            ? `<div class="div-tabs">${divTabs}</div>
+               <div class="iv-chip-list">${ivChips}</div>`
+            : `<div style="padding:12px;font-size:12px;color:var(--gray-400);">本部が未登録です</div>`
+          }
         </div>`;
 
-      // 本部クリック
-      container.querySelectorAll('.division-item').forEach(el => {
-        el.onclick = () => { activeDivision = el.dataset.div; render(); };
+      // 本部タブ
+      container.querySelectorAll('.div-tab').forEach(tab => {
+        tab.onclick = () => { activeDivision = tab.dataset.div; render(); };
       });
 
-      // チェックボックス
-      container.querySelectorAll('.interviewer-item input').forEach(cb => {
-        cb.onchange = () => {
-          const id = Number(cb.value);
-          cb.checked ? selected.add(id) : selected.delete(id);
+      // 面接官チップ（トグル）
+      container.querySelectorAll('.iv-chip').forEach(chip => {
+        chip.onclick = () => {
+          const id = Number(chip.dataset.id);
+          selected.has(id) ? selected.delete(id) : selected.add(id);
           render();
         };
       });
@@ -263,10 +264,7 @@ const Masters = (() => {
     }
 
     render();
-
-    return {
-      getSelected: () => [...selected],
-    };
+    return { getSelected: () => [...selected] };
   }
 
   // ===== インクリメンタルサーチ =====

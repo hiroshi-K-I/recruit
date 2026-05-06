@@ -123,14 +123,6 @@ const Candidates = (() => {
     const locations    = Masters.get('locations').map(l => l.name);
     const hrStaffs     = Masters.get('hrStaff').map(s => s.name);
 
-    const selStatus = SELECTION_STATUSES.map(s =>
-      `<option ${c.selectionStatus === s ? 'selected' : ''}>${Utils.esc(s)}</option>`
-    ).join('');
-
-    const selStaff = hrStaffs.map(s =>
-      `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`
-    ).join('');
-
     // 希望勤務地チェックボックス
     const prefLocs = (c.preferredLocations || []);
     const locChecks = locations.map(l =>
@@ -154,11 +146,12 @@ const Candidates = (() => {
         </div>
         <div class="form-group">
           <label>採用種別</label>
-          <select id="f-recruit-type" class="form-control">
-            <option value="">--</option>
-            <option ${c.recruitType === '新卒' ? 'selected' : ''}>新卒</option>
-            <option ${c.recruitType === 'キャリア' ? 'selected' : ''}>キャリア</option>
-          </select>
+          <div class="toggle-btn-group" id="f-recruit-btns">
+            ${['', '新卒', 'キャリア'].map(v =>
+              `<button class="toggle-btn${(c.recruitType || '') === v ? ' active' : ''}" data-val="${Utils.esc(v)}">${v || '未設定'}</button>`
+            ).join('')}
+          </div>
+          <input type="hidden" id="f-recruit-type" value="${Utils.esc(c.recruitType || '')}">
         </div>
       </div>
       <div class="form-row">
@@ -169,7 +162,9 @@ const Candidates = (() => {
         <div class="form-group">
           <label>文理</label>
           <div class="radio-group">
-            ${['文系','理系','その他'].map(v => `<label><input type="radio" name="faculty" value="${v}" ${c.facultyType === v ? 'checked' : ''}> ${v}</label>`).join('')}
+            ${['文系','理系','その他'].map(v =>
+              `<label><input type="radio" name="faculty" value="${v}" ${c.facultyType === v ? 'checked' : ''}> ${v}</label>`
+            ).join('')}
           </div>
         </div>
       </div>
@@ -180,28 +175,36 @@ const Candidates = (() => {
         </div>
         <div class="form-group">
           <label>担当者</label>
-          <select id="f-hrstaff" class="form-control">
-            <option value="">--</option>
-            ${selStaff}
-          </select>
+          ${hrStaffs.length
+            ? `<div class="chip-toggle-group" id="f-hrstaff-chips">
+                 ${hrStaffs.map(s =>
+                   `<button class="chip-toggle${c.hrStaff === s ? ' selected' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
+                 ).join('')}
+               </div>
+               <input type="hidden" id="f-hrstaff" value="${Utils.esc(c.hrStaff || '')}">`
+            : `<select id="f-hrstaff" class="form-control">
+                 <option value="">--</option>
+                 ${hrStaffs.map(s => `<option ${c.hrStaff === s ? 'selected' : ''}>${Utils.esc(s)}</option>`).join('')}
+               </select>`
+          }
         </div>
       </div>
       <div class="form-group">
         <label>希望勤務地</label>
         <div class="check-group">${locChecks || '<span style="color:var(--gray-400);font-size:12px;">（勤務地マスタ未登録）</span>'}</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>選考状況</label>
-          <select id="f-status" class="form-control">
-            <option value="">--</option>
-            ${selStatus}
-          </select>
+      <div class="form-group">
+        <label>選考状況</label>
+        <div class="status-grid">
+          ${SELECTION_STATUSES.map(s =>
+            `<button class="status-chip${c.selectionStatus === s ? ' active' : ''}" data-val="${Utils.esc(s)}">${Utils.esc(s)}</button>`
+          ).join('')}
         </div>
-        <div class="form-group">
-          <label>志望度</label>
-          <div class="star-rating">${stars}</div>
-        </div>
+        <input type="hidden" id="f-status" value="${Utils.esc(c.selectionStatus || '')}">
+      </div>
+      <div class="form-group">
+        <label>志望度</label>
+        <div class="star-rating">${stars}</div>
       </div>
       <div class="form-group">
         <label>申送り</label>
@@ -211,6 +214,38 @@ const Candidates = (() => {
         <label>特記事項</label>
         <textarea id="f-remarks" class="form-control">${Utils.esc(c.remarks || '')}</textarea>
       </div>`;
+
+    // ===== 採用種別ボタン =====
+    document.querySelectorAll('#f-recruit-btns .toggle-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#f-recruit-btns .toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('f-recruit-type').value = btn.dataset.val;
+      };
+    });
+
+    // ===== 選考状況チップ =====
+    document.querySelectorAll('.status-grid .status-chip').forEach(chip => {
+      chip.onclick = () => {
+        document.querySelectorAll('.status-grid .status-chip').forEach(ch => ch.classList.remove('active'));
+        chip.classList.add('active');
+        document.getElementById('f-status').value = chip.dataset.val;
+      };
+    });
+
+    // ===== 担当者チップ（単一選択）=====
+    document.querySelectorAll('#f-hrstaff-chips .chip-toggle').forEach(btn => {
+      btn.onclick = () => {
+        const wasSelected = btn.classList.contains('selected');
+        document.querySelectorAll('#f-hrstaff-chips .chip-toggle').forEach(b => b.classList.remove('selected'));
+        if (!wasSelected) {
+          btn.classList.add('selected');
+          document.getElementById('f-hrstaff').value = btn.dataset.val;
+        } else {
+          document.getElementById('f-hrstaff').value = '';
+        }
+      };
+    });
 
     // オートコンプリート
     Masters.attachAutocomplete(document.getElementById('f-university'), universities);
@@ -236,16 +271,16 @@ const Candidates = (() => {
 
     const data = {
       name,
-      recruitType:      document.getElementById('f-recruit-type').value,
-      university:       document.getElementById('f-university').value.trim(),
-      facultyType:      faculty,
-      jobType:          document.getElementById('f-jobtype').value.trim(),
-      hrStaff:          document.getElementById('f-hrstaff').value,
+      recruitType:        document.getElementById('f-recruit-type').value,
+      university:         document.getElementById('f-university').value.trim(),
+      facultyType:        faculty,
+      jobType:            document.getElementById('f-jobtype').value.trim(),
+      hrStaff:            document.getElementById('f-hrstaff').value,
       preferredLocations: prefLocs,
-      selectionStatus:  document.getElementById('f-status').value,
-      motivation:       motiv,
-      notes:            document.getElementById('f-notes').value.trim(),
-      remarks:          document.getElementById('f-remarks').value.trim(),
+      selectionStatus:    document.getElementById('f-status').value,
+      motivation:         motiv,
+      notes:              document.getElementById('f-notes').value.trim(),
+      remarks:            document.getElementById('f-remarks').value.trim(),
     };
 
     if (editingId !== null) {
