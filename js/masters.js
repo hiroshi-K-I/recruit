@@ -62,19 +62,74 @@ const Masters = (() => {
     cache[key] = await DB.getAll(DEFS[key].store);
   }
 
+  // ===== 全マスタ一括エクスポート =====
+  function exportAllMasters() {
+    const data = { meta: { exportedAt: Utils.nowISO(), type: 'masters-only' } };
+    Object.keys(DEFS).forEach(key => { data[key] = get(key); });
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `masters_${Utils.formatDate(new Date()).replace(/-/g, '')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    Utils.toast('全マスタをエクスポートしました');
+  }
+
+  // ===== 全マスタ一括インポート =====
+  async function importAllMasters(file) {
+    let raw;
+    try { raw = JSON.parse(await file.text()); }
+    catch { Utils.toast('JSONの解析に失敗しました', 'error'); return; }
+
+    // 全体同期JSON（payload.masters）にも対応
+    const src = raw.masters || raw;
+
+    let added = 0, skipped = 0;
+    for (const key of Object.keys(DEFS)) {
+      const items = src[key] || [];
+      if (!items.length) continue;
+      const existing    = get(key);
+      const existNames  = new Set(existing.map(x => x.name).filter(Boolean));
+      for (const item of items) {
+        const { id, ...rest } = item;
+        if (rest.name && existNames.has(rest.name)) { skipped++; continue; }
+        await DB.add(DEFS[key].store, rest);
+        if (rest.name) existNames.add(rest.name);
+        added++;
+      }
+      await refresh(key);
+    }
+    renderMasterTable(currentMaster, document.getElementById('masters-content'));
+    Utils.toast(`一括インポート完了: ${added}件追加${skipped ? `（${skipped}件スキップ）` : ''}`);
+  }
+
   // ===== マスタ設定ビュー描画 =====
   function renderView() {
     const content = document.getElementById('masters-content');
     renderMasterTable(currentMaster, content);
 
-    document.querySelectorAll('.masters-menu-item').forEach(btn => {
+    document.querySelectorAll('.masters-menu-item[data-master]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.master === currentMaster);
       btn.onclick = () => {
         currentMaster = btn.dataset.master;
-        document.querySelectorAll('.masters-menu-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.masters-menu-item[data-master]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         renderMasterTable(currentMaster, content);
       };
+    });
+
+    document.getElementById('btn-all-masters-export')?.addEventListener('click', exportAllMasters);
+    document.getElementById('inp-all-masters-import')?.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (Utils.confirm('全マスタをインポートします。同名エントリはスキップされます。続行しますか？')) {
+        importAllMasters(file);
+      }
+      e.target.value = '';
     });
   }
 
@@ -405,5 +460,5 @@ const Masters = (() => {
     });
   }
 
-  return { loadAll, get, refresh, renderView, buildInterviewerSelector, attachAutocomplete, exportMaster, importMasterCSV, DEFS };
+  return { loadAll, get, refresh, renderView, buildInterviewerSelector, attachAutocomplete, exportMaster, importMasterCSV, exportAllMasters, importAllMasters, DEFS };
 })();

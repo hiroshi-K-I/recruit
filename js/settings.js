@@ -12,12 +12,35 @@ const Settings = (() => {
   function getLastExportAt() { return load().lastExportAt || null; }
   function setLastExportAt(iso) { save({ ...load(), lastExportAt: iso }); }
 
+  // ===== 同期フォルダ =====
+  function getSyncFolderName() {
+    return localStorage.getItem('iv_sync_folder_name') || '';
+  }
+
+  async function pickSyncFolder() {
+    if (!window.showDirectoryPicker) {
+      Utils.toast('このブラウザはフォルダ選択をサポートしていません（Chrome/Edge推奨）', 'error');
+      return null;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'read' });
+      await DB.putMeta('syncFolderHandle', handle);
+      localStorage.setItem('iv_sync_folder_name', handle.name);
+      return handle;
+    } catch (e) {
+      if (e.name !== 'AbortError') Utils.toast('フォルダの選択に失敗しました', 'error');
+      return null;
+    }
+  }
+
   // ===== 設定モーダル描画 =====
   function renderModal() {
     const cur = getUsername();
     document.getElementById('settings-username').value = cur;
     document.getElementById('settings-last-export').textContent =
       getLastExportAt() ? Utils.formatDateTime(getLastExportAt()) : '（未実施）';
+    const folderEl = document.getElementById('settings-sync-folder');
+    if (folderEl) folderEl.textContent = getSyncFolderName() || '（未設定）';
     openBackdrop('modal-settings');
   }
 
@@ -35,5 +58,5 @@ const Settings = (() => {
     if (el) el.textContent = getUsername() || '未設定';
   }
 
-  return { getUsername, setUsername, getLastExportAt, setLastExportAt, renderModal, saveFromModal, updateUsernameDisplay };
+  return { getUsername, setUsername, getLastExportAt, setLastExportAt, getSyncFolderName, pickSyncFolder, renderModal, saveFromModal, updateUsernameDisplay };
 })();

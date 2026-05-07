@@ -1,6 +1,6 @@
 const DB = (() => {
   const DB_NAME = 'InterviewSchedulerDB';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   let db = null;
 
   const STORES = {
@@ -13,6 +13,7 @@ const DB = (() => {
     HR_STAFF:     'masters_hrStaff',
     ROOMS:        'masters_rooms',
   };
+  const META_STORE = 'meta';
 
   function open() {
     return new Promise((resolve, reject) => {
@@ -37,6 +38,9 @@ const DB = (() => {
             d.createObjectStore(name, { keyPath: 'id', autoIncrement: true });
           }
         });
+        if (!d.objectStoreNames.contains(META_STORE)) {
+          d.createObjectStore(META_STORE, { keyPath: 'key' });
+        }
       };
     });
   }
@@ -95,5 +99,21 @@ const DB = (() => {
     });
   }
 
-  return { open, getAll, get, add, put, remove, clearAll, STORES };
+  function getMeta(key) {
+    return new Promise((resolve, reject) => {
+      const req = tx(META_STORE).get(key);
+      req.onsuccess = () => resolve(req.result?.value ?? null);
+      req.onerror  = () => reject(req.error);
+    });
+  }
+
+  function putMeta(key, value) {
+    return new Promise((resolve, reject) => {
+      const req = tx(META_STORE, 'readwrite').put({ key, value });
+      req.onsuccess = () => resolve();
+      req.onerror  = () => reject(req.error);
+    });
+  }
+
+  return { open, getAll, get, add, put, remove, clearAll, getMeta, putMeta, STORES };
 })();

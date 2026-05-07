@@ -28,6 +28,7 @@
             <div class="data-menu-section-title">同期（JSON）</div>
             <button class="data-menu-item" id="btn-sync-export">📤 エクスポート</button>
             <button class="data-menu-item" id="btn-sync-import">📥 インポート</button>
+            <button class="data-menu-item" id="btn-auto-import-json">📁 最新JSONをインポート</button>
           </div>
           <div class="data-menu-divider"></div>
           <div class="data-menu-section">
@@ -139,6 +140,13 @@
         <button class="masters-menu-item" data-master="locations">勤務地</button>
         <button class="masters-menu-item" data-master="hrStaff">担当者</button>
         <button class="masters-menu-item" data-master="rooms">面接場所</button>
+        <hr style="border:none;border-top:1px solid var(--gray-200);margin:10px 0 6px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-400);padding:2px 14px 4px;letter-spacing:.5px">全マスタ一括</div>
+        <button class="masters-menu-item" id="btn-all-masters-export">↓ エクスポート</button>
+        <label class="masters-menu-item" style="cursor:pointer;display:block;">
+          ↑ インポート
+          <input type="file" id="inp-all-masters-import" accept=".json" style="display:none">
+        </label>
       </nav>
       <div class="masters-content" id="masters-content"></div>
     </div>
@@ -193,6 +201,13 @@
       <div class="form-group">
         <label>最終同期エクスポート日時</label>
         <div id="settings-last-export" style="font-size:13px;color:var(--gray-500);padding:6px 0;"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>同期フォルダ <span style="font-size:11px;font-weight:400;color:var(--gray-400)">（最新JSONワンクリックインポート用）</span></label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+          <span id="settings-sync-folder" style="flex:1;font-size:13px;color:var(--gray-500);"></span>
+          <button class="btn btn-secondary btn-sm" id="btn-pick-sync-folder">📁 フォルダを選択</button>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
