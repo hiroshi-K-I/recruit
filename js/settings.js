@@ -13,8 +13,19 @@ const Settings = (() => {
   function setLastExportAt(iso) { save({ ...load(), lastExportAt: iso }); }
 
   // ===== 同期フォルダ =====
+  let _syncFolderHandle = null;
+
   function getSyncFolderName() {
     return localStorage.getItem('iv_sync_folder_name') || '';
+  }
+
+  async function getSyncFolderHandle() {
+    if (_syncFolderHandle) return _syncFolderHandle;
+    try {
+      const h = await DB.getMeta('syncFolderHandle');
+      if (h) _syncFolderHandle = h;
+      return h;
+    } catch { return null; }
   }
 
   async function pickSyncFolder() {
@@ -24,8 +35,9 @@ const Settings = (() => {
     }
     try {
       const handle = await window.showDirectoryPicker({ mode: 'read' });
-      await DB.putMeta('syncFolderHandle', handle);
+      _syncFolderHandle = handle;
       localStorage.setItem('iv_sync_folder_name', handle.name);
+      try { await DB.putMeta('syncFolderHandle', handle); } catch {}
       return handle;
     } catch (e) {
       if (e.name !== 'AbortError') Utils.toast('フォルダの選択に失敗しました', 'error');
@@ -58,5 +70,5 @@ const Settings = (() => {
     if (el) el.textContent = getUsername() || '未設定';
   }
 
-  return { getUsername, setUsername, getLastExportAt, setLastExportAt, getSyncFolderName, pickSyncFolder, renderModal, saveFromModal, updateUsernameDisplay };
+  return { getUsername, setUsername, getLastExportAt, setLastExportAt, getSyncFolderName, getSyncFolderHandle, pickSyncFolder, renderModal, saveFromModal, updateUsernameDisplay };
 })();

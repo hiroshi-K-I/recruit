@@ -84,8 +84,7 @@
   document.getElementById('btn-auto-import-json')?.addEventListener('click', async () => {
     dataMenuPanel?.classList.remove('open');
 
-    let handle = null;
-    try { handle = await DB.getMeta('syncFolderHandle'); } catch {}
+    let handle = await Settings.getSyncFolderHandle();
     if (!handle) {
       Utils.toast('同期フォルダが未設定です。⚙ 設定からフォルダを選択してください', 'error');
       return;
