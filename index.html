@@ -28,7 +28,6 @@
             <div class="data-menu-section-title">同期（JSON）</div>
             <button class="data-menu-item" id="btn-sync-export">📤 エクスポート</button>
             <button class="data-menu-item" id="btn-sync-import">📥 インポート</button>
-            <button class="data-menu-item" id="btn-auto-import-json">📁 最新JSONをインポート</button>
           </div>
           <div class="data-menu-divider"></div>
           <div class="data-menu-section">
@@ -198,16 +197,9 @@
         <label class="required">ユーザー名（同期時に記録されます）</label>
         <input type="text" id="settings-username" class="form-control" placeholder="例: 山田 太郎">
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:0">
         <label>最終同期エクスポート日時</label>
         <div id="settings-last-export" style="font-size:13px;color:var(--gray-500);padding:6px 0;"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>同期フォルダ <span style="font-size:11px;font-weight:400;color:var(--gray-400)">（最新JSONワンクリックインポート用）</span></label>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-          <span id="settings-sync-folder" style="flex:1;font-size:13px;color:var(--gray-500);"></span>
-          <button class="btn btn-secondary btn-sm" id="btn-pick-sync-folder">📁 フォルダを選択</button>
-        </div>
       </div>
     </div>
     <div class="modal-footer">

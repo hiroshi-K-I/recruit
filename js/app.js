@@ -67,56 +67,11 @@
     Settings.saveFromModal();
     Settings.updateUsernameDisplay();
   });
-  document.getElementById('btn-pick-sync-folder')?.addEventListener('click', async () => {
-    const handle = await Settings.pickSyncFolder();
-    if (handle) {
-      const el = document.getElementById('settings-sync-folder');
-      if (el) el.textContent = handle.name;
-      Utils.toast(`同期フォルダを「${handle.name}」に設定しました`);
-    }
-  });
 
   // ===== 同期エクスポート / インポート =====
   document.getElementById('btn-sync-export')?.addEventListener('click', () => Sync.exportJSON());
   document.getElementById('btn-sync-import')?.addEventListener('click', () => Sync.openImportModal());
 
-  // ===== 最新JSONワンクリックインポート =====
-  document.getElementById('btn-auto-import-json')?.addEventListener('click', async () => {
-    dataMenuPanel?.classList.remove('open');
-
-    let handle = await Settings.getSyncFolderHandle();
-    if (!handle) {
-      Utils.toast('同期フォルダが未設定です。⚙ 設定からフォルダを選択してください', 'error');
-      return;
-    }
-
-    let perm;
-    try { perm = await handle.requestPermission({ mode: 'read' }); }
-    catch { Utils.toast('フォルダへのアクセスに失敗しました', 'error'); return; }
-    if (perm !== 'granted') { Utils.toast('フォルダへのアクセスが拒否されました', 'error'); return; }
-
-    const jsonFiles = [];
-    for await (const [name, entry] of handle.entries()) {
-      if (entry.kind === 'file' && name.toLowerCase().endsWith('.json')) {
-        try {
-          const file = await entry.getFile();
-          jsonFiles.push({ name, file, lastModified: file.lastModified });
-        } catch {}
-      }
-    }
-    if (jsonFiles.length === 0) {
-      Utils.toast(`「${handle.name}」にJSONファイルが見つかりません`, 'error');
-      return;
-    }
-
-    jsonFiles.sort((a, b) => b.lastModified - a.lastModified);
-    const latest  = jsonFiles[0];
-    const dateStr = Utils.formatDateTime(new Date(latest.lastModified).toISOString());
-    if (!Utils.confirm(`最新ファイル「${latest.name}」\n（${dateStr}）をインポートします。続行しますか？`)) return;
-
-    await Sync.openImportModal();
-    await Sync.onFileSelected(latest.file);
-  });
   document.getElementById('sync-file-input')?.addEventListener('change', e => {
     Sync.onFileSelected(e.target.files[0]);
   });

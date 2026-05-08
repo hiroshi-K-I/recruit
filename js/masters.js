@@ -133,69 +133,12 @@ const Masters = (() => {
     });
   }
 
-  // ===== マスタCSVエクスポート =====
-  function exportMaster(key) {
-    const def = DEFS[key];
-    const items = get(key);
-    const header = def.fields.map(f => f.label).join(',');
-    const rows = items.map(item =>
-      def.fields.map(f => Utils.csvCell(item[f.key] || '')).join(',')
-    );
-    const csv = [header, ...rows].join('\r\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${def.label}_${Utils.formatDate(new Date())}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    Utils.toast(`${def.label}マスタをエクスポートしました`);
-  }
-
-  // ===== マスタCSVインポート =====
-  async function importMasterCSV(key, file) {
-    const def = DEFS[key];
-    const text = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.onerror = () => reject(new Error('ファイル読み込み失敗'));
-      reader.readAsText(file, 'UTF-8');
-    });
-    const { headers, rows } = Utils.parseCSV(text);
-    if (!headers.length) { Utils.toast('CSVが空です', 'error'); return; }
-
-    // ヘッダーをフィールドにマッピング（label または key で照合）
-    const colMap = headers.map(h =>
-      def.fields.find(f => f.label === h.trim() || f.key === h.trim()) || null
-    );
-
-    let added = 0, skipped = 0;
-    for (const row of rows) {
-      const data = {};
-      colMap.forEach((f, i) => { if (f) data[f.key] = (row[i] || '').trim(); });
-      const hasRequired = def.fields.filter(f => f.required).every(f => data[f.key]);
-      if (!hasRequired) { skipped++; continue; }
-      await DB.add(def.store, data);
-      added++;
-    }
-    await refresh(key);
-    renderMasterTable(key, document.getElementById('masters-content'));
-    Utils.toast(`${added}件インポート完了${skipped ? `（${skipped}件スキップ）` : ''}`);
-  }
-
   function renderMasterTable(key, container) {
     const def = DEFS[key];
     const items = get(key);
 
     let html = `<div class="masters-header">
       <h2 class="masters-section-title">${def.label}マスタ</h2>
-      <div class="masters-io-bar">
-        <button class="btn btn-ghost btn-sm" id="btn-master-export-${key}">↓ CSVエクスポート</button>
-        <label class="masters-import-label btn btn-ghost btn-sm">
-          ↑ CSVインポート
-          <input type="file" accept=".csv" id="inp-master-import-${key}" style="display:none">
-        </label>
-      </div>
     </div>`;
 
     // 追加フォーム行
@@ -226,17 +169,6 @@ const Masters = (() => {
     }
     html += `</tbody></table>`;
     container.innerHTML = html;
-
-    // I/Oボタン
-    document.getElementById(`btn-master-export-${key}`).onclick = () => exportMaster(key);
-    document.getElementById(`inp-master-import-${key}`).onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (Utils.confirm(`${def.label}マスタにCSVからデータをインポートします。続行しますか？`)) {
-        importMasterCSV(key, file);
-      }
-      e.target.value = '';
-    };
 
     // 追加ボタン
     document.getElementById(`btn-master-add-${key}`).onclick = () => addItem(key);
@@ -460,5 +392,5 @@ const Masters = (() => {
     });
   }
 
-  return { loadAll, get, refresh, renderView, buildInterviewerSelector, attachAutocomplete, exportMaster, importMasterCSV, exportAllMasters, importAllMasters, DEFS };
+  return { loadAll, get, refresh, renderView, buildInterviewerSelector, attachAutocomplete, exportAllMasters, importAllMasters, DEFS };
 })();
