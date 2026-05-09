@@ -96,6 +96,7 @@ const Utils = (() => {
       case '不合格': return 'block-fail';
       case '辞退':  return 'block-cancel';
       case '保留':  return 'block-hold';
+      case '混在':  return 'block-mixed';
       default:      return 'block-assigned';
     }
   }

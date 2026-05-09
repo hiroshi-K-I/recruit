@@ -1,7 +1,7 @@
 const Interviews = (() => {
   const RESULTS = ['未実施','合格','不合格','辞退','保留'];
   const ROUNDS  = ['1次面接','2次面接','役員面接','その他'];
-  const RESULT_CSS = { '未実施': 'neutral', '合格': 'pass', '不合格': 'fail', '辞退': 'cancel', '保留': 'hold' };
+  const RESULT_CSS = { '未実施': 'neutral', '合格': 'pass', '不合格': 'fail', '辞退': 'cancel', '保留': 'hold', '混在': 'mixed' };
 
   // 面接回次 → 自動絞り込む選考状況
   const ROUND_STATUS = {
@@ -40,6 +40,10 @@ const Interviews = (() => {
       if (!iv.round)               iv.round = '1次面接';
       if (!iv.guideIds)            iv.guideIds = [];
       if (!iv.arrangementsChecked) iv.arrangementsChecked = { interviewer: false, room: false, guide: false };
+      if (!iv.candidateResults) {
+        iv.candidateResults = {};
+        iv.candidateIds.forEach(cid => { iv.candidateResults[cid] = iv.result || '未実施'; });
+      }
       iv._candidateNames = iv.candidateIds.map(id => cands.find(x => x.id === id)?.name).filter(Boolean);
       iv._candidateName  = iv._candidateNames[0] || '';
       return iv;
@@ -98,9 +102,21 @@ const Interviews = (() => {
     const start  = iv.startTime || defaultStart;
     const end    = iv.endTime   || defaultEnd;
     const format = iv.format    || 'リアル';
-    const result = iv.result    || '未実施';
     const round  = iv.round     || '1次面接';
     const ac     = iv.arrangementsChecked || {};
+
+    // 候補者ごとの結果ステート（モーダルが開いている間保持）
+    const candidateResults = {};
+    (iv.candidateIds || []).forEach(cid => {
+      candidateResults[cid] = (iv.candidateResults || {})[cid] || iv.result || '未実施';
+    });
+
+    function refreshResultSection() {
+      const selIds = [...document.querySelectorAll('#iv-candidate-area .tag')]
+        .map(t => Number(t.dataset.id)).filter(Boolean);
+      selIds.forEach(sid => { if (!(sid in candidateResults)) candidateResults[sid] = '未実施'; });
+      buildResultSection('iv-result-area', selIds, candidateResults, cands);
+    }
 
     const cands    = Candidates.getAll();
     const rooms    = Masters.get('rooms').map(r => r.name);
@@ -182,12 +198,7 @@ const Interviews = (() => {
             </div>
             <div class="form-group">
               <label>面接結果</label>
-              <div class="result-btn-group">
-                ${RESULTS.map(r =>
-                  `<button class="result-btn result-btn-${RESULT_CSS[r]}${result === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
-                ).join('')}
-              </div>
-              <input type="hidden" id="iv-result" value="${Utils.esc(result)}">
+              <div id="iv-result-area"></div>
             </div>
           </div>
 
@@ -285,24 +296,50 @@ const Interviews = (() => {
       document.getElementById('iv-location').value = document.getElementById('iv-location-custom').value.trim();
     });
 
-    // ===== 結果ボタン =====
-    document.querySelectorAll('.result-btn-group .result-btn').forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll('.result-btn-group .result-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('iv-result').value = btn.dataset.val;
-      };
-    });
-
-    buildCandidateSelector('iv-candidate-area', cands, iv.candidateIds || [], round);
+    buildCandidateSelector('iv-candidate-area', cands, iv.candidateIds || [], round, refreshResultSection);
+    refreshResultSection();
     ivSelector = Masters.buildInterviewerSelector('iv-interviewer-selector', iv.interviewerIds || []);
     buildGuideSelector('iv-guide-area', hrStaffs, iv.guideIds || []);
 
     openBackdrop('modal-interview');
   }
 
+  // ===== 候補者ごとの結果セクション =====
+  function buildResultSection(areaId, selectedIds, resultsState, cands) {
+    const area = document.getElementById(areaId);
+    if (!area) return;
+    if (selectedIds.length === 0) {
+      area.innerHTML = '<p style="font-size:12px;color:var(--gray-400);margin:4px 0;">候補者を選択してください</p>';
+      return;
+    }
+    area.innerHTML = selectedIds.map(id => {
+      const cand = cands.find(c => c.id === id);
+      const name = cand ? Utils.esc(cand.name) : `ID:${id}`;
+      const cur  = resultsState[id] || '未実施';
+      const btns = RESULTS.map(r =>
+        `<button class="result-btn result-btn-${RESULT_CSS[r]}${cur === r ? ' active' : ''}" data-val="${Utils.esc(r)}">${Utils.esc(r)}</button>`
+      ).join('');
+      return `<div class="candidate-result-row" data-id="${id}"
+        style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="flex:0 0 76px;font-size:13px;font-weight:500;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;" title="${name}">${name}</span>
+        <div class="result-btn-group">${btns}</div>
+      </div>`;
+    }).join('');
+    area.querySelectorAll('.candidate-result-row').forEach(row => {
+      const cid = Number(row.dataset.id);
+      row.querySelectorAll('.result-btn').forEach(btn => {
+        btn.onclick = () => {
+          row.querySelectorAll('.result-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          resultsState[cid] = btn.dataset.val;
+        };
+      });
+    });
+  }
+
   // ===== 候補者セレクタ（選考状況フィルタ + インクリメンタルサーチ）=====
-  function buildCandidateSelector(containerId, cands, selectedIds, round) {
+  function buildCandidateSelector(containerId, cands, selectedIds, round, onSelectionChange) {
     const container = document.getElementById(containerId);
     if (!container) return;
     let selected  = new Set(selectedIds);
@@ -356,7 +393,7 @@ const Interviews = (() => {
         }`;
 
       container.querySelectorAll('.tag-remove').forEach(btn =>
-        btn.onclick = () => { selected.delete(Number(btn.dataset.id)); render(); });
+        btn.onclick = () => { selected.delete(Number(btn.dataset.id)); render(); onSelectionChange?.(); });
 
       const searchInput  = document.getElementById('cand-search-input');
       const statusFilter = document.getElementById('cand-status-filter');
@@ -392,6 +429,7 @@ const Interviews = (() => {
               e.preventDefault();
               selected.add(Number(item.dataset.id));
               render();
+              onSelectionChange?.();
             });
           });
         }
@@ -471,6 +509,20 @@ const Interviews = (() => {
       }
     }
 
+    // 候補者ごとの結果を収集
+    const candidateResultsMap = {};
+    document.querySelectorAll('#iv-result-area .candidate-result-row').forEach(row => {
+      const cid = Number(row.dataset.id);
+      const active = row.querySelector('.result-btn.active');
+      candidateResultsMap[cid] = active ? active.dataset.val : '未実施';
+    });
+
+    // カレンダー表示用サマリー
+    const resultVals  = candIds.map(id => candidateResultsMap[id] || '未実施');
+    const uniqueVals  = [...new Set(resultVals)];
+    const summaryResult = resultVals.length === 0 ? '未実施'
+      : uniqueVals.length === 1 ? uniqueVals[0] : '混在';
+
     const data = {
       date,
       startTime:      start,
@@ -482,7 +534,8 @@ const Interviews = (() => {
       format:         document.getElementById('iv-format').value || 'リアル',
       location:       document.getElementById('iv-location').value.trim(),
       onlineUrl:      document.getElementById('iv-online-url').value.trim(),
-      result:         document.getElementById('iv-result').value,
+      result:         summaryResult,
+      candidateResults: candidateResultsMap,
       notes:          document.getElementById('iv-notes').value.trim(),
       arrangementsChecked: {
         interviewer: document.getElementById('arr-interviewer')?.checked || false,
@@ -502,19 +555,23 @@ const Interviews = (() => {
       Utils.toast('面接枠を登録しました');
     }
 
-    // 面接結果→候補者選考状況の自動更新提案
-    const nextStatus = RESULT_TO_NEXT_STATUS[data.round]?.[data.result];
-    if (nextStatus && data.candidateIds.length > 0) {
-      const cands   = Candidates.getAll();
-      const targets = data.candidateIds.map(id => cands.find(c => c.id === id)).filter(Boolean);
-      if (targets.length > 0) {
-        const names = targets.map(c => c.name).join('、');
-        if (Utils.confirm(`${names} の選考状況を「${nextStatus}」に更新しますか？`)) {
-          for (const cand of targets) {
-            await DB.put(DB.STORES.CANDIDATES, Sync.stamp({ ...cand, selectionStatus: nextStatus }));
-          }
-          await Candidates.load();
+    // 面接結果→候補者選考状況の自動更新（候補者ごとに個別判定）
+    const allCands = Candidates.getAll();
+    const updates  = [];
+    for (const cid of candIds) {
+      const cand       = allCands.find(c => c.id === cid);
+      if (!cand) continue;
+      const candResult = candidateResultsMap[cid] || '未実施';
+      const nextStatus = RESULT_TO_NEXT_STATUS[data.round]?.[candResult];
+      if (nextStatus) updates.push({ cand, nextStatus });
+    }
+    if (updates.length > 0) {
+      const msg = updates.map(u => `・${u.cand.name} → 「${u.nextStatus}」`).join('\n');
+      if (Utils.confirm(`以下の候補者の選考状況を更新しますか？\n${msg}`)) {
+        for (const { cand, nextStatus } of updates) {
+          await DB.put(DB.STORES.CANDIDATES, Sync.stamp({ ...cand, selectionStatus: nextStatus }));
         }
+        await Candidates.load();
       }
     }
 

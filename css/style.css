@@ -322,6 +322,7 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
 .block-fail     { background: #EF4444; color: #fff; }
 .block-cancel   { background: #9CA3AF; color: #fff; }
 .block-hold     { background: #8B5CF6; color: #fff; }
+.block-mixed    { background: linear-gradient(135deg, #10B981 50%, #EF4444 50%); color: #fff; }
 
 /* 月表示チップカラー */
 .chip-empty    { background: #3B82F6; }
@@ -330,6 +331,7 @@ tbody td { padding: 10px 12px; font-size: 13px; vertical-align: middle; }
 .chip-fail     { background: #EF4444; }
 .chip-cancel   { background: #9CA3AF; }
 .chip-hold     { background: #8B5CF6; }
+.chip-mixed    { background: linear-gradient(135deg, #10B981 50%, #EF4444 50%); }
 
 /* ===== ドラッグ選択ハイライト ===== */
 .drag-preview {
